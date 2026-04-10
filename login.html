@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RayWatch — Admin Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a1628;--surface:rgba(26,74,122,0.18);--surface2:rgba(26,74,122,0.28);
+  --ray:#4fb8a0;--ray2:#2d9a80;--warn:#e8834a;--danger:#e05454;
+  --text:#e8f4f0;--muted:rgba(232,244,240,0.55);--subtle:rgba(232,244,240,0.28);
+  --border:rgba(79,184,160,0.2);--radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-weight:300;
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 10%, rgba(20,50,88,0.9) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 80% 90%, rgba(13,32,64,0.9) 0%, transparent 70%),
+    radial-gradient(ellipse 30% 30% at 60% 40%, rgba(47,154,128,0.05) 0%, transparent 60%);
+  pointer-events:none;
+}
+
+/* Floating ray bg */
+.bg-ray{
+  position:fixed;right:-5%;bottom:5%;width:500px;opacity:.04;
+  animation:float 9s ease-in-out infinite;pointer-events:none;
+}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-20px) rotate(2deg)}}
+
+.card{
+  position:relative;z-index:1;
+  width:100%;max-width:400px;
+  background:rgba(13,32,64,0.7);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:2.5rem 2rem;
+  backdrop-filter:blur(16px);
+  animation:fadeUp .5s ease both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+.logo-wrap{text-align:center;margin-bottom:2rem;}
+.logo{
+  width:52px;height:52px;background:var(--ray);border-radius:14px;
+  display:inline-flex;align-items:center;justify-content:center;margin-bottom:1rem;
+}
+.logo svg{width:28px;height:28px;}
+h1{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;margin-bottom:.3rem;}
+.subtitle{font-size:.82rem;color:var(--muted);}
+
+.field{margin-bottom:1.1rem;}
+label{font-size:.78rem;color:var(--muted);display:block;margin-bottom:5px;}
+input{
+  width:100%;
+  background:rgba(10,22,40,0.6);
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-size:.9rem;
+  font-weight:300;
+  padding:11px 14px;
+  outline:none;
+  transition:border-color .2s;
+}
+input:focus{border-color:var(--ray);}
+input::placeholder{color:var(--subtle);}
+
+.error-msg{
+  display:none;
+  background:rgba(224,84,84,0.1);
+  border:1px solid rgba(224,84,84,0.3);
+  border-radius:8px;
+  padding:10px 12px;
+  font-size:.82rem;
+  color:#e05454;
+  margin-bottom:1rem;
+}
+.error-msg.show{display:block;}
+
+.btn-login{
+  width:100%;
+  background:var(--ray);
+  color:var(--bg);
+  border:none;
+  border-radius:var(--radius);
+  font-family:'Syne',sans-serif;
+  font-size:.95rem;
+  font-weight:700;
+  padding:13px;
+  cursor:pointer;
+  transition:background .2s,transform .1s;
+  margin-top:.5rem;
+}
+.btn-login:hover{background:var(--ray2);}
+.btn-login:active{transform:scale(.99);}
+.btn-login:disabled{opacity:.55;cursor:not-allowed;}
+
+.back-link{
+  display:block;text-align:center;margin-top:1.25rem;
+  font-size:.8rem;color:var(--muted);text-decoration:none;
+}
+.back-link:hover{color:var(--ray);}
+
+.spinner{
+  display:inline-block;width:15px;height:15px;
+  border:2px solid rgba(10,22,40,0.3);border-top-color:var(--bg);
+  border-radius:50%;animation:spin .6s linear infinite;
+  vertical-align:middle;margin-right:6px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<svg class="bg-ray" viewBox="0 0 400 200">
+  <path d="M20,100 Q200,20 380,100 Q200,180 20,100 Z" fill="#4fb8a0"/>
+  <path d="M200,180 L175,220 M200,180 L225,220" stroke="#4fb8a0" stroke-width="4" fill="none" stroke-linecap="round"/>
+</svg>
+
+<div class="card">
+  <div class="logo-wrap">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#0a1628" stroke-width="2.5" stroke-linecap="round">
+        <path d="M12 4C6 4 2 10 2 14c0 4 4 6 10 6s10-2 10-6c0-4-4-10-10-10Z"/>
+        <path d="M12 20l-4 3M12 20l4 3"/>
+      </svg>
+    </div>
+    <h1>Admin Login</h1>
+    <p class="subtitle">RayWatch moderation dashboard</p>
+  </div>
+
+  <div class="error-msg" id="error-msg"></div>
+
+  <div class="field">
+    <label>Email address</label>
+    <input type="email" id="email" placeholder="admin@raywatch.org" autocomplete="email">
+  </div>
+  <div class="field">
+    <label>Password</label>
+    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+  </div>
+
+  <button class="btn-login" id="btn-login">Sign in</button>
+  <a href="index.html" class="back-link">← Back to RayWatch</a>
+</div>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabase = createClient(
+  "https://bintflfjmtrpdnxyccho.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpbnRmbGZqbXRycGRueHljY2hvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjEwNDEsImV4cCI6MjA5MTI5NzA0MX0.Q9CCD1S8geIwsR6bLs7TH__urE7V1U9WZsj2Isv0sfk"
+);
+
+const btn = document.getElementById('btn-login');
+const errEl = document.getElementById('error-msg');
+
+function showError(msg) {
+  errEl.textContent = msg;
+  errEl.classList.add('show');
+}
+
+async function doLogin() {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  if (!email || !password) { showError('Please enter your email and password.'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Signing in…';
+  errEl.classList.remove('show');
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    showError(error.message);
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+    return;
+  }
+
+  setTimeout(() => { window.location.replace("admin.html"); }, 200);
+}
+
+btn.addEventListener('click', doLogin);
+document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>

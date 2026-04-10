@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RayWatch Admin — Review Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1117;--surface:#171b26;--surface2:#1e2333;--surface3:#252a3c;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --ray:#4fb8a0;--ray2:#2d9a80;--warn:#e8834a;--danger:#e05454;
+  --text:#e8edf5;--muted:rgba(232,237,245,0.5);--subtle:rgba(232,237,245,0.28);
+  --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:400;font-size:14px;min-height:100vh;}
+
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh;}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:1.5rem 1rem;display:flex;flex-direction:column;gap:4px;}
+.main{padding:2rem;overflow-y:auto;}
+
+.brand{display:flex;align-items:center;gap:10px;padding:0 6px;margin-bottom:1.5rem;}
+.brand-dot{width:32px;height:32px;background:var(--ray);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.brand-name{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;}
+.brand-sub{font-size:.7rem;color:var(--muted);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:.85rem;color:var(--muted);transition:all .15s;border:none;background:none;width:100%;text-align:left;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:rgba(79,184,160,0.12);color:var(--ray);}
+.nav-badge{margin-left:auto;background:var(--warn);color:#fff;font-size:.65rem;padding:2px 7px;border-radius:100px;font-weight:600;}
+.nav-section{font-size:.68rem;color:var(--subtle);padding:10px 10px 4px;letter-spacing:.08em;text-transform:uppercase;}
+.sidebar-footer{margin-top:auto;padding-top:1rem;border-top:1px solid var(--border);}
+.admin-pill{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--surface2);}
+.admin-avatar{width:26px;height:26px;background:var(--ray2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:var(--bg);flex-shrink:0;}
+.admin-name{font-size:.8rem;font-weight:500;}.admin-role{font-size:.68rem;color:var(--muted);}
+.logout-btn{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:.75rem;font-family:'DM Sans',sans-serif;}
+.logout-btn:hover{color:var(--danger);}
+
+.page-title{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:700;margin-bottom:.3rem;}
+.page-sub{font-size:.85rem;color:var(--muted);margin-bottom:1.5rem;}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;}
+.stat-label{font-size:.72rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;}
+.stat-val{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:700;}
+.stat-val.orange{color:var(--warn);}.stat-val.green{color:var(--ray);}.stat-val.red{color:var(--danger);}
+.stat-sub{font-size:.72rem;color:var(--muted);margin-top:3px;}
+
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap;}
+.filter-tabs{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.filter-tab{padding:6px 14px;font-size:.8rem;cursor:pointer;border:none;background:none;color:var(--muted);transition:all .15s;font-family:'DM Sans',sans-serif;}
+.filter-tab.active{background:var(--ray);color:var(--bg);font-weight:500;}
+.search-input{flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.85rem;padding:7px 12px;outline:none;}
+.search-input:focus{border-color:rgba(79,184,160,0.4);}
+.search-input::placeholder{color:var(--subtle);}
+.btn-icon{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:7px 10px;cursor:pointer;font-size:.8rem;}
+.btn-icon:hover{border-color:var(--border2);color:var(--text);}
+
+/* Year filter */
+.year-filter-row{display:flex;align-items:center;gap:6px;margin-bottom:1rem;flex-wrap:wrap;}
+.year-filter-label{font-size:.75rem;color:var(--muted);}
+.yr-chip{padding:4px 12px;border-radius:100px;font-size:.75rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .12s;}
+.yr-chip.active{background:rgba(79,184,160,0.15);color:var(--ray);border-color:rgba(79,184,160,0.35);}
+.yr-chip:hover:not(.active){color:var(--text);}
+
+.queue-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.queue-head{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:.72rem;color:var(--subtle);text-transform:uppercase;letter-spacing:.05em;}
+.queue-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);align-items:center;transition:background .12s;cursor:pointer;}
+.queue-row:last-child{border-bottom:none;}
+.queue-row:hover{background:var(--surface2);}
+.queue-row.selected{background:rgba(79,184,160,0.07);}
+.sighting-id{font-family:monospace;font-size:.78rem;color:var(--muted);}
+.sighting-loc{font-weight:500;font-size:.88rem;}
+.sighting-loc .coord{font-size:.72rem;color:var(--muted);font-weight:300;}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:100px;font-size:.72rem;font-weight:500;}
+.badge.pending{background:rgba(232,131,74,0.15);color:var(--warn);}
+.badge.approved{background:rgba(79,184,160,0.15);color:var(--ray);}
+.badge.rejected{background:rgba(224,84,84,0.15);color:var(--danger);}
+.count-chip{font-size:.8rem;font-weight:500;}
+.submitter-type{font-size:.75rem;color:var(--muted);}
+.photo-indicator{font-size:.72rem;color:var(--ray);opacity:.7;}
+.row-actions{display:flex;gap:6px;}
+.btn-approve,.btn-reject{padding:4px 10px;border-radius:6px;border:none;cursor:pointer;font-size:.75rem;font-family:'DM Sans',sans-serif;font-weight:500;transition:all .12s;}
+.btn-approve{background:rgba(79,184,160,0.15);color:var(--ray);}
+.btn-approve:hover{background:rgba(79,184,160,0.28);}
+.btn-reject{background:rgba(224,84,84,0.12);color:var(--danger);}
+.btn-reject:hover{background:rgba(224,84,84,0.25);}
+.empty-state{padding:3rem;text-align:center;color:var(--muted);font-size:.9rem;}
+
+/* Detail panel */
+.detail-wrap{position:fixed;top:0;right:0;bottom:0;width:420px;background:var(--surface);border-left:1px solid var(--border);z-index:100;transform:translateX(100%);transition:transform .3s ease;overflow-y:auto;display:flex;flex-direction:column;}
+.detail-wrap.open{transform:translateX(0);}
+.detail-header{padding:1.25rem 1.25rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.detail-header h3{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;flex:1;}
+.btn-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;padding:0 4px;}
+.detail-body{padding:1.25rem;flex:1;}
+.detail-map{width:100%;height:160px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);margin-bottom:1rem;overflow:hidden;position:relative;}
+.detail-section{margin-bottom:1rem;}
+.detail-section-title{font-size:.72rem;color:var(--subtle);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.detail-field{background:var(--surface2);border-radius:6px;padding:8px 10px;}
+.detail-field label{font-size:.7rem;color:var(--muted);display:block;margin-bottom:2px;}
+.detail-field span{font-size:.88rem;font-weight:500;}
+.detail-notes{background:var(--surface2);border-radius:6px;padding:10px;font-size:.85rem;line-height:1.5;color:var(--muted);font-style:italic;}
+
+/* Photo gallery in detail panel */
+.detail-photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:1rem;}
+.detail-photo{border-radius:6px;overflow:hidden;aspect-ratio:1;cursor:pointer;}
+.detail-photo img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s;}
+.detail-photo:hover img{transform:scale(1.05);}
+
+/* Telemetry badge in detail */
+.telem-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(79,184,160,0.1);border:1px solid rgba(79,184,160,0.25);border-radius:6px;padding:8px 10px;font-size:.8rem;color:var(--ray);}
+
+.detail-actions{padding:1rem 1.25rem;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;}
+.btn-full-approve{width:100%;padding:10px;border-radius:8px;border:none;cursor:pointer;background:var(--ray);color:var(--bg);font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;}
+.btn-full-approve:hover{background:var(--ray2);}
+.btn-full-reject{width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:transparent;color:var(--danger);font-family:'DM Sans',sans-serif;font-size:.85rem;}
+.btn-full-reject:hover{background:rgba(224,84,84,0.1);}
+.reject-reason{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.85rem;padding:8px 10px;outline:none;resize:none;display:none;}
+.reject-reason.show{display:block;}
+
+/* Telemetry section */
+.telem-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;}
+.telem-dropzone{border:1.5px dashed var(--border);border-radius:8px;padding:1.5rem;text-align:center;cursor:pointer;font-size:.82rem;color:var(--muted);transition:border-color .2s;position:relative;}
+.telem-dropzone:hover{border-color:rgba(79,184,160,0.4);}
+.telem-dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.telem-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:1rem;}
+.telem-input{flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.85rem;padding:8px 10px;outline:none;}
+.telem-input:focus{border-color:rgba(79,184,160,0.4);}
+.telem-input::placeholder{color:var(--subtle);}
+.btn-upload{padding:8px 18px;background:rgba(79,184,160,0.12);border:1px solid rgba(79,184,160,0.25);border-radius:8px;color:var(--ray);font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;}
+.btn-upload:hover{background:rgba(79,184,160,0.2);}
+.telem-log{margin-top:10px;max-height:120px;overflow-y:auto;}
+.telem-entry{font-size:.78rem;color:var(--muted);padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;}
+.telem-entry .ts{color:var(--subtle);}.telem-entry .ok{color:var(--ray);}
+
+/* ── Trends section ── */
+.trends-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.5rem;}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem;}
+.chart-title{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:1rem;}
+.bar-chart-h{display:flex;align-items:flex-end;gap:3px;height:90px;}
+.bar-h{flex:1;border-radius:3px 3px 0 0;min-height:4px;transition:background .2s,height .5s ease;cursor:pointer;}
+.bar-h:hover{opacity:.85;}
+.bar-chart-labels{display:flex;gap:3px;margin-top:5px;}
+.bar-h-lbl{flex:1;text-align:center;font-size:.6rem;color:var(--subtle);}
+.year-row-chart{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.8rem;}
+.year-row-chart .yr{min-width:36px;color:var(--muted);}
+.year-row-chart .bar-line{flex:1;height:12px;border-radius:3px;background:rgba(79,184,160,0.2);position:relative;overflow:hidden;}
+.year-row-chart .bar-fill{height:100%;background:var(--ray);border-radius:3px;transition:width .6s ease;}
+.year-row-chart .val{min-width:32px;text-align:right;color:var(--text);}
+.season-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:.5rem;}
+.season-chip{padding:4px 12px;border-radius:100px;font-size:.75rem;background:var(--surface2);color:var(--muted);}
+.season-chip.Spring{color:#7ecfa4;background:rgba(126,207,164,0.12);}
+.season-chip.Summer{color:#f0c060;background:rgba(240,192,96,0.12);}
+.season-chip.Fall{color:#e8834a;background:rgba(232,131,74,0.12);}
+.season-chip.Winter{color:#7ab0e0;background:rgba(122,176,224,0.12);}
+
+/* Risk table */
+#risk-body .risk-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);align-items:center;font-size:.83rem;}
+
+/* Pagination */
+.pagination{display:flex;align-items:center;gap:6px;margin-top:12px;justify-content:flex-end;}
+.page-btn{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:5px 10px;cursor:pointer;font-size:.8rem;}
+.page-btn.active{background:var(--ray);color:var(--bg);border-color:var(--ray);}
+.page-btn:hover:not(.active){border-color:var(--border2);color:var(--text);}
+
+.section{display:none;}.section.active{display:block;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px;}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-dot">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f1117" stroke-width="2.5" stroke-linecap="round">
+          <path d="M12 4C6 4 2 10 2 14c0 4 4 6 10 6s10-2 10-6c0-4-4-10-10-10Z"/>
+          <path d="M12 20l-4 3M12 20l4 3"/>
+        </svg>
+      </div>
+      <div><div class="brand-name">RayWatch</div><div class="brand-sub">Admin</div></div>
+    </div>
+
+    <button class="nav-item active" onclick="showSection('queue',this)"><span>⬡</span> Review queue<span class="nav-badge" id="nav-pending-count">…</span></button>
+    <button class="nav-item" onclick="showSection('all',this)"><span>≡</span> All sightings</button>
+    <button class="nav-item" onclick="showSection('trends',this)"><span>↗</span> Trends & analytics</button>
+
+    <div class="nav-section">Research</div>
+    <button class="nav-item" onclick="showSection('telemetry',this)"><span>↑</span> Telemetry upload</button>
+    <button class="nav-item" onclick="showSection('risk',this)"><span>◈</span> Risk zone preview</button>
+
+    <div class="sidebar-footer">
+      <div class="admin-pill">
+        <div class="admin-avatar">AR</div>
+        <div><div class="admin-name">Admin</div><div class="admin-role">admin@raywatch.org</div></div>
+        <button class="logout-btn" onclick="logout()">Sign out</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ── Queue ── -->
+    <div id="sec-queue" class="section active">
+      <div class="page-title">Review queue</div>
+      <div class="page-sub">Sightings awaiting moderation before appearing on the public map</div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-val orange" id="st-pending">…</div></div>
+        <div class="stat-card"><div class="stat-label">Approved</div><div class="stat-val green" id="st-approved">…</div></div>
+        <div class="stat-card"><div class="stat-label">Rejected</div><div class="stat-val red" id="st-rejected">…</div></div>
+        <div class="stat-card"><div class="stat-label">Total rays logged</div><div class="stat-val" id="st-rays">…</div></div>
+      </div>
+
+      <!-- Year filter -->
+      <div class="year-filter-row" id="year-filter-row">
+        <span class="year-filter-label">Year:</span>
+        <button class="yr-chip active" data-year="all" onclick="setYearFilter('all',this)">All</button>
+      </div>
+
+      <div class="toolbar">
+        <div class="filter-tabs">
+          <button class="filter-tab active" onclick="setFilter('pending',this)">Pending</button>
+          <button class="filter-tab" onclick="setFilter('all',this)">All</button>
+          <button class="filter-tab" onclick="setFilter('approved',this)">Approved</button>
+          <button class="filter-tab" onclick="setFilter('rejected',this)">Rejected</button>
+        </div>
+        <input class="search-input" id="search-input" placeholder="Search by submitter, location…" oninput="renderQueue()">
+        <button class="btn-icon" onclick="loadData()">↺ Refresh</button>
+      </div>
+
+      <div class="queue-wrap">
+        <div class="queue-head"><span>Sighting</span><span>Status</span><span>Rays</span><span>Type</span><span>Date</span><span>Actions</span></div>
+        <div id="queue-body"></div>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+
+    <!-- ── All sightings ── -->
+    <div id="sec-all" class="section">
+      <div class="page-title">All sightings</div>
+      <div class="page-sub">Complete record including approved, pending, and rejected</div>
+      <div class="queue-wrap"><div class="queue-head"><span>Sighting</span><span>Status</span><span>Rays</span><span>Type</span><span>Date</span><span>Actions</span></div><div id="all-body"></div></div>
+    </div>
+
+    <!-- ── Trends ── NEW -->
+    <div id="sec-trends" class="section">
+      <div class="page-title">Trends & analytics</div>
+      <div class="page-sub">Sighting patterns over time across years, seasons, and submitter types</div>
+      <div class="trends-grid" id="trends-grid">
+        <!-- populated by JS -->
+      </div>
+      <div id="yearly-table-wrap" class="queue-wrap">
+        <div style="display:grid;grid-template-columns:80px 1fr 1fr 1fr 1fr;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:.72rem;color:var(--subtle);text-transform:uppercase;letter-spacing:.05em;">
+          <span>Year</span><span>Sightings</span><span>Rays</span><span>Avg / sighting</span><span>Top season</span>
+        </div>
+        <div id="yearly-body"></div>
+      </div>
+    </div>
+
+    <!-- ── Telemetry ── -->
+    <div id="sec-telemetry" class="section">
+      <div class="page-title">Telemetry upload</div>
+      <div class="page-sub">Upload researcher-managed tag data. Summaries only — no individual track coordinates are stored or exposed publicly.</div>
+      <div class="telem-wrap">
+        <div class="telem-dropzone" id="telem-dropzone">
+          <input type="file" id="telem-upload-input" accept=".csv,.json,.gpx" onchange="onTelemFileSelected(this.files[0])">
+          <div style="font-size:1.5rem;opacity:.3;margin-bottom:8px">↑</div>
+          <div>Drop telemetry file (.csv, .json, .gpx) or <strong style="color:var(--ray)">click to browse</strong></div>
+          <div id="telem-file-name" style="font-size:.78rem;color:var(--ray);margin-top:6px;"></div>
+          <div style="font-size:.72rem;margin-top:4px;color:var(--subtle)">Data is aggregated to grid cells before storage. No raw track data is retained.</div>
+        </div>
+        <div class="telem-row">
+          <input class="telem-input" id="telem-researcher" placeholder="Researcher name" value="Dr. A. Chen">
+          <input class="telem-input" id="telem-season" placeholder="Season (e.g. Spring 2024)" value="Spring 2024">
+          <input class="telem-input" id="telem-region" placeholder="Region" value="Chesapeake / Mid-Atlantic">
+          <input class="telem-input" id="telem-tags" type="number" placeholder="Tag count" value="12" min="1">
+          <button class="btn-upload" onclick="simulateTelemetryUpload()">Upload & process</button>
+        </div>
+        <div class="telem-log" id="telem-log"></div>
+      </div>
+    </div>
+
+    <!-- ── Risk zones ── -->
+    <div id="sec-risk" class="section">
+      <div class="page-title">Risk zone preview</div>
+      <div class="page-sub">Computed bycatch risk zones from approved sightings. This is what appears on the public map.</div>
+      <div class="queue-wrap">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:.72rem;color:var(--subtle);text-transform:uppercase;letter-spacing:.05em;">
+          <span>Cell center</span><span>KDE intensity</span><span>Fishing weight</span><span>Risk tier</span><span>Sightings</span>
+        </div>
+        <div id="risk-body"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Detail panel -->
+<div class="detail-wrap" id="detail-panel">
+  <div class="detail-header">
+    <h3 id="detail-id">Sighting details</h3>
+    <span class="badge pending" id="detail-status-badge">pending</span>
+    <button class="btn-close" onclick="closeDetail()">×</button>
+  </div>
+  <div class="detail-body">
+    <div class="detail-map">
+      <svg id="detail-map-svg" width="100%" height="100%" viewBox="0 0 370 160"></svg>
+    </div>
+
+    <!-- Photos -->
+    <div class="detail-section" id="d-photos-section" style="display:none">
+      <div class="detail-section-title">Photos</div>
+      <div class="detail-photos" id="d-photos"></div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Location</div>
+      <div class="detail-grid">
+        <div class="detail-field"><label>Latitude</label><span id="d-lat">—</span></div>
+        <div class="detail-field"><label>Longitude</label><span id="d-lng">—</span></div>
+        <div class="detail-field"><label>Grid cell</label><span id="d-cell">—</span></div>
+        <div class="detail-field"><label>GPS accuracy</label><span id="d-acc">—</span></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Observation</div>
+      <div class="detail-grid">
+        <div class="detail-field"><label>Ray count</label><span id="d-count">—</span></div>
+        <div class="detail-field"><label>Behavior</label><span id="d-behavior">—</span></div>
+        <div class="detail-field"><label>Depth (m)</label><span id="d-depth">—</span></div>
+        <div class="detail-field"><label>Temp (°C)</label><span id="d-temp">—</span></div>
+        <div class="detail-field"><label>Submitter</label><span id="d-submitter">—</span></div>
+        <div class="detail-field"><label>Type</label><span id="d-type">—</span></div>
+      </div>
+    </div>
+    <!-- Telemetry badge -->
+    <div class="detail-section" id="d-telem-section" style="display:none">
+      <div class="detail-section-title">Telemetry</div>
+      <div class="telem-badge" id="d-telem-info">📡 Tag data attached</div>
+    </div>
+    <div class="detail-section" id="d-notes-section" style="display:none">
+      <div class="detail-section-title">Notes</div>
+      <div class="detail-notes" id="d-notes"></div>
+    </div>
+  </div>
+  <div class="detail-actions" id="detail-actions">
+    <button class="btn-full-approve" onclick="detailAction('approve')">Approve & publish</button>
+    <textarea class="reject-reason" id="d-reject-reason" rows="2" placeholder="Reason for rejection (optional)…"></textarea>
+    <button class="btn-full-reject" onclick="detailAction('reject')">Reject</button>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+import { GeneralizationEngine } from './core.js';
+
+const supabase = createClient(
+  "https://bintflfjmtrpdnxyccho.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpbnRmbGZqbXRycGRueHljY2hvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjEwNDEsImV4cCI6MjA5MTI5NzA0MX0.Q9CCD1S8geIwsR6bLs7TH__urE7V1U9WZsj2Isv0sfk"
+);
+
+// Auth check
+const { data: session } = await supabase.auth.getSession();
+if (!session.session) window.location.href = 'login.html';
+
+// ── State ──
+let STORE = [];
+let currentFilter = 'pending';
+let currentPage = 1;
+let selectedYear = 'all';
+let selectedSighting = null;
+const PAGE_SIZE = 12;
+
+// ── Load ──
+async function loadData() {
+  const { data, error } = await supabase.from('sightings').select('*');
+  if (error) { console.error(error); return; }
+  STORE = data.map(d => ({
+    ...d,
+    lat: parseFloat(d.lat),
+    lng: parseFloat(d.lng),
+    count: parseInt(d.count) || 0,
+    submitted_at: d.submitted_at || new Date().toISOString(),
+    status: d.status || 'pending',
+    cell_lat: d.cell_lat ?? parseFloat(d.lat),
+    cell_lng: d.cell_lng ?? parseFloat(d.lng),
+    cell_size_deg: d.cell_size_deg ?? 0.15,
+    photo_urls: d.photo_urls || null,
+    telemetry_data: d.telemetry_data || null,
+  }));
+  refreshStats();
+  populateYearFilter();
+  renderQueue();
+}
+window.loadData = loadData;
+
+function populateYearFilter() {
+  const years = [...new Set(STORE.map(s => GeneralizationEngine.getYear(s.submitted_at)))].sort().reverse();
+  const row = document.getElementById('year-filter-row');
+  // Remove old year chips (keep "All")
+  row.querySelectorAll('[data-year]:not([data-year="all"])').forEach(el => el.remove());
+  years.forEach(y => {
+    const btn = document.createElement('button');
+    btn.className = 'yr-chip';
+    btn.dataset.year = y;
+    btn.textContent = y;
+    btn.onclick = () => setYearFilter(y, btn);
+    row.appendChild(btn);
+  });
+}
+
+// ── Stats ──
+function refreshStats() {
+  const p = STORE.filter(s=>s.status==='pending').length;
+  const a = STORE.filter(s=>s.status==='approved').length;
+  const r = STORE.filter(s=>s.status==='rejected').length;
+  const rays = STORE.filter(s=>s.status==='approved').reduce((n,s)=>n+(s.count||1),0);
+  document.getElementById('st-pending').textContent = p;
+  document.getElementById('st-approved').textContent = a;
+  document.getElementById('st-rejected').textContent = r;
+  document.getElementById('st-rays').textContent = rays.toLocaleString();
+  document.getElementById('nav-pending-count').textContent = p;
+}
+
+// ── Filters ──
+window.setYearFilter = function(year, el) {
+  selectedYear = year === 'all' ? 'all' : +year;
+  document.querySelectorAll('.yr-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentPage = 1;
+  renderQueue();
+};
+
+window.setFilter = function(f, el) {
+  currentFilter = f;
+  currentPage = 1;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderQueue();
+};
+
+function getFiltered() {
+  const q = document.getElementById('search-input')?.value.toLowerCase() || '';
+  return STORE.filter(s => {
+    if (currentFilter !== 'all' && s.status !== currentFilter) return false;
+    if (selectedYear !== 'all' && GeneralizationEngine.getYear(s.submitted_at) !== selectedYear) return false;
+    if (q && !JSON.stringify([s.submitter_name, s.lat, s.lng, s.behavior, s.notes]).toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function getSeason(ts) { return GeneralizationEngine.getSeason(ts); }
+
+function renderQueue() {
+  const data = getFiltered();
+  const pages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
+  if (currentPage > pages) currentPage = 1;
+  const slice = data.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
+  const body = document.getElementById('queue-body');
+  if (!body) return;
+  if (!slice.length) { body.innerHTML = '<div class="empty-state">No sightings match this filter.</div>'; renderPagination(0,0); return; }
+  body.innerHTML = slice.map(s => `
+    <div class="queue-row${s.id===selectedSighting?.id?' selected':''}" onclick="openDetail('${s.id}')">
+      <div>
+        <div class="sighting-loc">${s.lat.toFixed(3)}°N, ${Math.abs(s.lng).toFixed(3)}°W</div>
+        <div class="sighting-id">${s.id.slice(0,8).toUpperCase()} · ${getSeason(s.submitted_at)} ${new Date(s.submitted_at).getFullYear()}${s.photo_urls?.length ? ' 📷' : ''}${s.telemetry_data ? ' 📡' : ''}</div>
+      </div>
+      <div><span class="badge ${s.status}">${s.status}</span></div>
+      <div class="count-chip">${s.count}</div>
+      <div class="submitter-type">${s.submitter_type}</div>
+      <div style="font-size:.78rem;color:var(--muted)">${new Date(s.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})}</div>
+      <div class="row-actions">${s.status==='pending'?`
+        <button class="btn-approve" onclick="quickAction(event,'${s.id}','approve')">✓</button>
+        <button class="btn-reject"  onclick="quickAction(event,'${s.id}','reject')">✕</button>
+      `:'<span style="font-size:.72rem;color:var(--subtle)">'+(s.reviewed_by?'Reviewed':'—')+'</span>'}</div>
+    </div>`).join('');
+  renderPagination(pages, currentPage);
+}
+
+function renderPagination(pages, cur) {
+  const el = document.getElementById('pagination');
+  if (!el) return;
+  if (pages <= 1) { el.innerHTML = ''; return; }
+  el.innerHTML = Array.from({length:pages},(_,i)=>`<button class="page-btn${i+1===cur?' active':''}" onclick="goPage(${i+1})">${i+1}</button>`).join('');
+}
+window.goPage = p => { currentPage=p; renderQueue(); };
+
+// ── Quick actions ──
+window.quickAction = async function(e, id, action) {
+  e.stopPropagation();
+  const { error } = await supabase.from('sightings').update({ status: action==='approve'?'approved':'rejected' }).eq('id', id);
+  if (error) { console.error(error); alert('Update failed'); return; }
+  await loadData();
+  if (selectedSighting?.id === id) {
+    selectedSighting = STORE.find(x => x.id === id);
+    if (selectedSighting) renderDetail(selectedSighting);
+  }
+};
+
+// ── Detail panel ──
+window.openDetail = function(id) {
+  const s = STORE.find(x => x.id === id);
+  if (!s) return;
+  selectedSighting = s;
+  renderDetail(s);
+  document.getElementById('detail-panel').classList.add('open');
+  renderQueue();
+};
+window.closeDetail = function() {
+  document.getElementById('detail-panel').classList.remove('open');
+  selectedSighting = null;
+  renderQueue();
+};
+
+function renderDetail(s) {
+  document.getElementById('detail-id').textContent = 'Sighting ' + s.id.slice(0,8).toUpperCase();
+  const badge = document.getElementById('detail-status-badge');
+  badge.textContent = s.status; badge.className = 'badge ' + s.status;
+  document.getElementById('d-lat').textContent = s.lat.toFixed(5);
+  document.getElementById('d-lng').textContent = s.lng.toFixed(5);
+  document.getElementById('d-cell').textContent = s.cell_lat.toFixed(3) + ', ' + s.cell_lng.toFixed(3);
+  document.getElementById('d-acc').textContent = (s.accuracy_m || '?') + 'm';
+  document.getElementById('d-count').textContent = s.count;
+  document.getElementById('d-behavior').textContent = s.behavior || '—';
+  document.getElementById('d-depth').textContent = s.depth_m ?? '—';
+  document.getElementById('d-temp').textContent = s.water_temp_c ?? '—';
+  document.getElementById('d-submitter').textContent = s.submitter_name || 'Anonymous';
+  document.getElementById('d-type').textContent = s.submitter_type;
+
+  // Photos
+  const photoSec = document.getElementById('d-photos-section');
+  const photoGrid = document.getElementById('d-photos');
+  if (s.photo_urls?.length) {
+    photoSec.style.display = 'block';
+    photoGrid.innerHTML = s.photo_urls.map(u => `
+      <div class="detail-photo" onclick="window.open('${u}','_blank')">
+        <img src="${u}" alt="Sighting photo" loading="lazy">
+      </div>`).join('');
+  } else { photoSec.style.display = 'none'; }
+
+  // Telemetry badge
+  const telemSec = document.getElementById('d-telem-section');
+  if (s.telemetry_data) {
+    telemSec.style.display = 'block';
+    document.getElementById('d-telem-info').textContent = `📡 ${s.telemetry_data.file_name || 'Tag data'} · Tag: ${s.telemetry_data.tag_id || '—'}`;
+  } else { telemSec.style.display = 'none'; }
+
+  // Notes
+  const noteSec = document.getElementById('d-notes-section');
+  if (s.notes) { noteSec.style.display = 'block'; document.getElementById('d-notes').textContent = s.notes; }
+  else { noteSec.style.display = 'none'; }
+
+  // Actions
+  const actDiv = document.getElementById('detail-actions');
+  const rej = document.getElementById('d-reject-reason');
+  if (s.status === 'pending') { actDiv.style.display = 'flex'; rej.classList.remove('show'); }
+  else { actDiv.style.display = 'none'; }
+
+  drawMiniMap(s);
+}
+
+function drawMiniMap(s) {
+  const svg = document.getElementById('detail-map-svg');
+  const W=370, H=160, pad=20, latRange=0.8, lngRange=1.0;
+  const minLat=s.lat-latRange/2, minLng=s.lng-lngRange/2;
+  function px(lat,lng){return[(lng-minLng)/lngRange*(W-pad*2)+pad,(1-(lat-minLat)/latRange)*(H-pad*2)+pad];}
+  const nearby = STORE.filter(x=>Math.abs(x.lat-s.lat)<latRange/2&&Math.abs(x.lng-s.lng)<lngRange/2&&x.id!==s.id);
+  const dots = nearby.map(x=>{const[px2,py]=px(x.lat,x.lng);return`<circle cx="${px2}" cy="${py}" r="3" fill="rgba(79,184,160,0.3)"/>`;}).join('');
+  const [cx,cy] = px(s.lat, s.lng);
+  svg.innerHTML = `<rect width="${W}" height="${H}" fill="#1e2333" rx="8"/>
+    <line x1="${W/2}" y1="0" x2="${W/2}" y2="${H}" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+    <line x1="0" y1="${H/2}" x2="${W}" y2="${H/2}" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+    ${dots}
+    <circle cx="${cx}" cy="${cy}" r="9" fill="rgba(79,184,160,0.2)"/>
+    <circle cx="${cx}" cy="${cy}" r="4" fill="#4fb8a0"/>
+    <text x="${cx+12}" y="${cy+4}" font-size="10" fill="rgba(232,237,245,0.6)" font-family="DM Sans">${s.lat.toFixed(3)}°N</text>`;
+}
+
+window.detailAction = function(action) {
+  const rej = document.getElementById('d-reject-reason');
+  if (action==='reject' && !rej.classList.contains('show')) { rej.classList.add('show'); return; }
+  quickAction({stopPropagation:()=>{}}, selectedSighting.id, action);
+};
+
+// ── All sightings ──
+function renderAll() {
+  const body = document.getElementById('all-body');
+  const data = [...STORE].sort((a,b)=>new Date(b.submitted_at)-new Date(a.submitted_at));
+  body.innerHTML = data.map(s => `
+    <div class="queue-row" onclick="openDetail('${s.id}')">
+      <div><div class="sighting-loc">${s.lat.toFixed(3)}°N, ${Math.abs(s.lng).toFixed(3)}°W</div>
+      <div class="sighting-id">${s.id.slice(0,8).toUpperCase()} · ${new Date(s.submitted_at).getFullYear()}${s.photo_urls?.length?' 📷':''}${s.telemetry_data?' 📡':''}</div></div>
+      <div><span class="badge ${s.status}">${s.status}</span></div>
+      <div class="count-chip">${s.count}</div>
+      <div class="submitter-type">${s.submitter_type}</div>
+      <div style="font-size:.78rem;color:var(--muted)">${new Date(s.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})}</div>
+      <div class="row-actions">${s.status==='pending'?`<button class="btn-approve" onclick="quickAction(event,'${s.id}','approve')">✓</button><button class="btn-reject" onclick="quickAction(event,'${s.id}','reject')">✕</button>`:'<span style="font-size:.72rem;color:var(--subtle)">Reviewed</span>'}</div>
+    </div>`).join('');
+}
+
+// ── Trends ──
+function renderTrends() {
+  const approved = STORE.filter(s => s.status === 'approved');
+  const monthly = GeneralizationEngine.monthlyTrend(approved);
+  const yearly = GeneralizationEngine.yearlyStats(approved);
+  const grid = document.getElementById('trends-grid');
+
+  // Monthly chart
+  const MONTHS = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+  const last12 = monthly.slice(-12);
+  const maxM = Math.max(...last12.map(m => m.count), 1);
+  const tierColors = {'Spring':'#7ecfa4','Summer':'#f0c060','Fall':'#e8834a','Winter':'#7ab0e0'};
+
+  grid.innerHTML = `
+    <div class="chart-card">
+      <div class="chart-title">Monthly sightings (last 12 months)</div>
+      <div class="bar-chart-h">
+        ${last12.map(m=>{
+          const h=Math.max(6,(m.count/maxM)*80);
+          const season=GeneralizationEngine.getSeason(new Date(m.year,m.month,15).toISOString());
+          return`<div class="bar-h" style="height:${h}px;background:${tierColors[season]||'var(--ray)'};opacity:.75" title="${MONTHS[m.month]} ${m.year}: ${m.count} sightings"></div>`;
+        }).join('')}
+      </div>
+      <div class="bar-chart-labels">
+        ${last12.map(m=>`<span class="bar-h-lbl">${MONTHS[m.month]}</span>`).join('')}
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Sightings by season (all years)</div>
+      <div class="season-chips" style="margin-top:.5rem">
+        ${['Spring','Summer','Fall','Winter'].map(season=>{
+          const count=approved.filter(s=>GeneralizationEngine.getSeason(s.submitted_at)===season).length;
+          return`<div class="season-chip ${season}">${season}: <strong>${count}</strong></div>`;
+        }).join('')}
+      </div>
+      <div style="margin-top:1rem;font-size:.8rem;color:var(--muted);">
+        ${['public','fisherman','researcher'].map(t=>{
+          const count=approved.filter(s=>s.submitter_type===t).length;
+          return`<div style="margin-bottom:4px">${t.charAt(0).toUpperCase()+t.slice(1)}: <strong style="color:var(--text)">${count}</strong></div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+  // Yearly table
+  const maxY = Math.max(...yearly.map(y => y.sighting_count), 1);
+  const yearlyBody = document.getElementById('yearly-body');
+  yearlyBody.innerHTML = [...yearly].reverse().map(y => {
+    const topSeason = Object.entries(y.by_season).sort((a,b)=>b[1]-a[1])[0];
+    return `<div style="display:grid;grid-template-columns:80px 1fr 1fr 1fr 1fr;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);align-items:center;">
+      <strong style="font-family:'Syne',sans-serif;">${y.year}</strong>
+      <div class="year-row-chart" style="display:flex;align-items:center;gap:8px;">
+        <div class="bar-line"><div class="bar-fill" style="width:${(y.sighting_count/maxY*100).toFixed(0)}%"></div></div>
+        <span style="font-size:.82rem">${y.sighting_count}</span>
+      </div>
+      <span style="font-size:.82rem">${y.total_rays.toLocaleString()}</span>
+      <span style="font-size:.82rem">${y.avg_count}</span>
+      <span class="season-chip ${topSeason[0]}" style="display:inline-block">${topSeason[0]}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Risk zones ──
+function computeRiskZones() {
+  const approved = STORE.filter(s=>s.status==='approved');
+  const cells = {};
+  approved.forEach(s=>{
+    const k = `${s.cell_lat},${s.cell_lng}`;
+    if (!cells[k]) cells[k] = {cell_lat:s.cell_lat,cell_lng:s.cell_lng,count:0};
+    cells[k].count++;
+  });
+  const list = Object.values(cells).filter(c=>c.count>=3);
+  const maxC = Math.max(...list.map(c=>c.count),1);
+  return list.map(c=>{
+    const kde = c.count/maxC;
+    const fw = Math.min(1, 0.2+Math.max(0,1-Math.abs(c.cell_lng+75.9)*3)*0.8);
+    const score = kde*fw;
+    return {...c,kde:+kde.toFixed(3),fw:+fw.toFixed(3),score:+score.toFixed(3),tier:score>.35?'high':score>.12?'medium':'low'};
+  }).sort((a,b)=>b.score-a.score);
+}
+
+function renderRisk() {
+  const zones = computeRiskZones();
+  document.getElementById('risk-body').innerHTML = zones.map(z=>`
+    <div class="risk-row">
+      <span style="font-family:monospace;font-size:.78rem;">${z.cell_lat.toFixed(3)}, ${z.cell_lng.toFixed(3)}</span>
+      <span>${(z.kde*100).toFixed(0)}%</span>
+      <span>${(z.fw*100).toFixed(0)}%</span>
+      <span><span class="badge ${z.tier==='high'?'rejected':z.tier==='medium'?'pending':'approved'}">${z.tier}</span></span>
+      <span>${z.count}</span>
+    </div>`).join('');
+}
+
+// ── Telemetry ──
+const telemLog = [];
+window.onTelemFileSelected = function(file) {
+  if (file) document.getElementById('telem-file-name').textContent = `✓ ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+};
+window.simulateTelemetryUpload = function() {
+  const researcher = document.getElementById('telem-researcher').value || 'Unknown';
+  const season = document.getElementById('telem-season').value || '—';
+  const tags = +document.getElementById('telem-tags').value || 0;
+  const entry = {ts:new Date().toLocaleTimeString(), researcher, season, tags, status:'Processing…'};
+  telemLog.unshift(entry);
+  renderTelemLog();
+  setTimeout(()=>{ entry.status='ok'; renderTelemLog(); }, 900);
+};
+function renderTelemLog() {
+  const el = document.getElementById('telem-log');
+  el.innerHTML = telemLog.map(e=>`<div class="telem-entry"><span class="ts">${e.ts}</span><span>${e.researcher} · ${e.season} · ${e.tags} tags</span><span class="${e.status==='ok'?'ok':''}">${e.status}</span></div>`).join('');
+}
+
+// ── Section nav ──
+window.showSection = function(name, btn) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  btn.classList.add('active');
+  closeDetail();
+  if (name==='all') renderAll();
+  if (name==='risk') renderRisk();
+  if (name==='trends') renderTrends();
+};
+
+window.logout = async function() {
+  await supabase.auth.signOut();
+  window.location.href = 'login.html';
+};
+
+loadData();
+</script>
+</body>
+</html>

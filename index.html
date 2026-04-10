@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RayWatch — Cownose Ray Migration Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a1628;--surface:rgba(26,74,122,0.18);--surface2:rgba(26,74,122,0.28);
+  --ray:#4fb8a0;--ray2:#2d9a80;--warn:#e8834a;
+  --text:#e8f4f0;--muted:rgba(232,244,240,0.6);--subtle:rgba(232,244,240,0.3);
+  --border:rgba(79,184,160,0.2);--radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-weight:300;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+body::before{
+  content:'';
+  position:fixed;top:0;left:0;right:0;height:100vh;
+  background:
+    radial-gradient(ellipse 70% 50% at 10% 0%, rgba(20,50,88,0.8) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 90% 80%, rgba(13,32,64,0.9) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(47,154,128,0.06) 0%, transparent 60%);
+  pointer-events:none;z-index:0;
+}
+
+/* NAV */
+nav{
+  position:sticky;top:0;z-index:100;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 32px;
+  background:rgba(10,22,40,0.85);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(12px);
+}
+.nav-brand{display:flex;align-items:center;gap:10px;}
+.nav-logo{width:32px;height:32px;background:var(--ray);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.nav-logo svg{width:18px;height:18px;}
+.nav-name{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;}
+.nav-links{display:flex;align-items:center;gap:6px;}
+.nav-links a{
+  color:var(--muted);text-decoration:none;
+  font-size:.82rem;padding:6px 14px;border-radius:100px;
+  border:1px solid transparent;transition:all .15s;
+}
+.nav-links a:hover{color:var(--text);border-color:var(--border);}
+.nav-links a.cta{background:var(--ray);color:var(--bg);font-weight:500;border-color:var(--ray);}
+.nav-links a.cta:hover{background:var(--ray2);}
+
+/* HERO */
+.hero{
+  position:relative;z-index:1;
+  text-align:center;
+  padding:90px 24px 70px;
+}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:.75rem;color:var(--ray);text-transform:uppercase;letter-spacing:.1em;
+  padding:5px 14px;border:1px solid rgba(79,184,160,0.3);border-radius:100px;
+  margin-bottom:1.8rem;
+}
+.live-dot{width:6px;height:6px;background:var(--ray);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
+.hero h1{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(2.2rem,5vw,4rem);
+  font-weight:800;
+  line-height:1.1;
+  letter-spacing:-.02em;
+  margin-bottom:1.2rem;
+}
+.hero h1 em{font-style:normal;color:var(--ray);}
+.hero-sub{
+  font-size:1rem;color:var(--muted);
+  max-width:480px;margin:0 auto 2.5rem;line-height:1.6;
+}
+.hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.btn{
+  padding:12px 26px;border-radius:var(--radius);
+  font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:500;
+  cursor:pointer;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+  border:none;
+}
+.btn-primary{background:var(--ray);color:var(--bg);}
+.btn-primary:hover{background:var(--ray2);}
+.btn-outline{background:transparent;color:var(--ray);border:1px solid rgba(79,184,160,0.4);}
+.btn-outline:hover{background:rgba(79,184,160,0.08);border-color:var(--ray);}
+
+/* RAY SVG animation */
+.hero-ray{
+  position:absolute;right:8%;top:15%;
+  width:280px;opacity:.15;
+  animation:float 7s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-18px) rotate(3deg)}}
+
+/* YEAR SELECTOR */
+.year-bar{
+  position:relative;z-index:1;
+  display:flex;justify-content:center;align-items:center;gap:8px;
+  padding:0 24px 50px;flex-wrap:wrap;
+}
+.year-chip{
+  padding:5px 16px;border-radius:100px;
+  font-size:.8rem;font-weight:500;cursor:pointer;
+  border:1px solid var(--border);background:transparent;color:var(--muted);
+  font-family:'DM Sans',sans-serif;transition:all .15s;
+}
+.year-chip.active{background:rgba(79,184,160,0.15);color:var(--ray);border-color:rgba(79,184,160,0.4);}
+.year-chip:hover:not(.active){color:var(--text);border-color:var(--border);}
+.year-label{font-size:.75rem;color:var(--subtle);margin-right:4px;}
+
+/* STATS ROW */
+.stats-section{
+  position:relative;z-index:1;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px;max-width:860px;margin:0 auto 5rem;padding:0 24px;
+}
+.stat-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:1.2rem 1rem;
+  text-align:center;
+  transition:border-color .2s;
+}
+.stat-card:hover{border-color:rgba(79,184,160,0.4);}
+.stat-num{font-family:'Syne',sans-serif;font-size:1.9rem;font-weight:700;color:var(--ray);}
+.stat-desc{font-size:.78rem;color:var(--muted);margin-top:4px;}
+
+/* TREND MINI CHART */
+.trend-section{
+  position:relative;z-index:1;
+  max-width:860px;margin:0 auto 5rem;padding:0 24px;
+}
+.section-label{
+  font-family:'Syne',sans-serif;font-size:.75rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--ray);
+  margin-bottom:1.2rem;display:flex;align-items:center;gap:8px;
+}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.trend-chart-wrap{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.25rem;
+}
+.bar-chart{display:flex;align-items:flex-end;gap:4px;height:80px;margin-bottom:8px;}
+.bar{
+  flex:1;background:rgba(79,184,160,0.25);border-radius:3px 3px 0 0;
+  min-height:4px;transition:background .2s,height .5s ease;cursor:pointer;position:relative;
+}
+.bar:hover{background:var(--ray);}
+.bar-labels{display:flex;gap:4px;justify-content:space-between;}
+.bar-label{flex:1;text-align:center;font-size:.62rem;color:var(--subtle);}
+
+/* FACTS */
+.facts-section{
+  position:relative;z-index:1;
+  max-width:860px;margin:0 auto 6rem;padding:0 24px;
+}
+.facts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+.fact-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.4rem;transition:border-color .2s,transform .2s;
+}
+.fact-card:hover{border-color:rgba(79,184,160,0.4);transform:translateY(-2px);}
+.fact-icon{font-size:1.5rem;margin-bottom:.75rem;}
+.fact-card h3{font-family:'Syne',sans-serif;font-size:.88rem;color:var(--ray);margin-bottom:.5rem;}
+.fact-card p{font-size:.85rem;color:var(--muted);line-height:1.6;}
+
+/* FOOTER */
+footer{
+  position:relative;z-index:1;
+  text-align:center;padding:2rem;
+  border-top:1px solid var(--border);
+  font-size:.78rem;color:var(--subtle);
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#0a1628" stroke-width="2.5" stroke-linecap="round">
+        <path d="M12 4C6 4 2 10 2 14c0 4 4 6 10 6s10-2 10-6c0-4-4-10-10-10Z"/>
+        <path d="M12 20l-4 3M12 20l4 3"/>
+      </svg>
+    </div>
+    <span class="nav-name">RayWatch</span>
+  </div>
+  <div class="nav-links">
+    <a href="map.html">Map</a>
+    <a href="submit.html">Report</a>
+    <a href="admin.html">Admin</a>
+    <a href="submit.html" class="cta">Report Sighting</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow"><div class="live-dot"></div>Live citizen science platform</div>
+  <h1>Track <em>cownose ray</em><br>migration in real time</h1>
+  <p class="hero-sub">Crowd-sourced sightings, researcher telemetry, and bycatch risk analytics across the Chesapeake Bay and Mid-Atlantic coast.</p>
+  <div class="hero-actions">
+    <a href="map.html" class="btn btn-primary">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+      View Migration Map
+    </a>
+    <a href="submit.html" class="btn btn-outline">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Report a Sighting
+    </a>
+  </div>
+
+  <!-- floating ray -->
+  <svg class="hero-ray" viewBox="0 0 300 160">
+    <path d="M20,80 Q150,20 280,80 Q150,140 20,80 Z" fill="#4fb8a0"/>
+    <path d="M150,140 L130,170 M150,140 L170,170" stroke="#4fb8a0" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <circle cx="120" cy="75" r="4" fill="rgba(10,22,40,0.3)"/>
+  </svg>
+</div>
+
+<!-- YEAR FILTER -->
+<div class="year-bar" id="year-bar">
+  <span class="year-label">Filter by year:</span>
+  <button class="year-chip active" data-year="all" onclick="setYear('all',this)">All years</button>
+  <!-- year chips injected by JS -->
+</div>
+
+<!-- STATS -->
+<div class="stats-section" id="stats-section">
+  <div class="stat-card"><div class="stat-num" id="s-sightings">—</div><div class="stat-desc">Approved sightings</div></div>
+  <div class="stat-card"><div class="stat-num" id="s-rays">—</div><div class="stat-desc">Rays recorded</div></div>
+  <div class="stat-card"><div class="stat-num" id="s-zones">—</div><div class="stat-desc">Active risk zones</div></div>
+  <div class="stat-card"><div class="stat-num" id="s-year">—</div><div class="stat-desc">Sightings this year</div></div>
+</div>
+
+<!-- TREND CHART -->
+<div class="trend-section">
+  <div class="section-label">Monthly sightings trend</div>
+  <div class="trend-chart-wrap">
+    <div class="bar-chart" id="bar-chart"></div>
+    <div class="bar-labels" id="bar-labels"></div>
+  </div>
+</div>
+
+<!-- FACTS -->
+<div class="facts-section">
+  <div class="section-label">About the species</div>
+  <div class="facts-grid">
+    <div class="fact-card">
+      <div class="fact-icon">🐟</div>
+      <h3>Conservation Status</h3>
+      <p>Cownose rays (<em>Rhinoptera bonasus</em>) are Near Threatened due to bycatch and unregulated recreational fishing pressure along the Atlantic coast.</p>
+    </div>
+    <div class="fact-card">
+      <div class="fact-icon">🌊</div>
+      <h3>Seasonal Migration</h3>
+      <p>They migrate in large aggregations — sometimes thousands — northward in spring and return south in fall, often entering the Chesapeake Bay.</p>
+    </div>
+    <div class="fact-card">
+      <div class="fact-icon">📡</div>
+      <h3>Telemetry Research</h3>
+      <p>Tagged individuals provide depth, temperature, and track data that refines our understanding of habitat use and bycatch risk windows.</p>
+    </div>
+    <div class="fact-card">
+      <div class="fact-icon">📸</div>
+      <h3>Photo Documentation</h3>
+      <p>Submitted photos help researchers verify sightings, assess aggregation size, and document unusual behaviors or injuries in the field.</p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  RayWatch · Cownose Ray Migration Tracker · Data is generalized for privacy — exact coordinates are never shown publicly
+</footer>
+
+<script type="module">
+import { API, GeneralizationEngine } from './core.js';
+
+let allSightings = [];
+let selectedYear = 'all';
+
+async function init() {
+  try {
+    allSightings = await API.getAll();
+    populateYears();
+    renderStats();
+    renderTrendChart();
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function populateYears() {
+  const years = [...new Set(allSightings.map(s => GeneralizationEngine.getYear(s.submitted_at)))].sort().reverse();
+  const bar = document.getElementById('year-bar');
+  years.forEach(y => {
+    const btn = document.createElement('button');
+    btn.className = 'year-chip';
+    btn.dataset.year = y;
+    btn.textContent = y;
+    btn.onclick = () => setYear(y, btn);
+    bar.appendChild(btn);
+  });
+}
+
+window.setYear = function(year, el) {
+  selectedYear = year;
+  document.querySelectorAll('.year-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderStats();
+  renderTrendChart();
+};
+
+function getFiltered() {
+  if (selectedYear === 'all') return allSightings;
+  return allSightings.filter(s => GeneralizationEngine.getYear(s.submitted_at) === +selectedYear);
+}
+
+function renderStats() {
+  const filtered = getFiltered();
+  const approved = filtered.filter(s => s.status === 'approved');
+  const zones = GeneralizationEngine.aggregateCells(approved);
+  const thisYear = new Date().getFullYear();
+  const thisYearCount = allSightings.filter(s => GeneralizationEngine.getYear(s.submitted_at) === thisYear).length;
+
+  document.getElementById('s-sightings').textContent = approved.length;
+  document.getElementById('s-rays').textContent = approved.reduce((n,s)=>n+(s.count||1),0).toLocaleString();
+  document.getElementById('s-zones').textContent = zones.length;
+  document.getElementById('s-year').textContent = thisYearCount;
+}
+
+function renderTrendChart() {
+  const filtered = getFiltered().filter(s => s.status === 'approved');
+  const monthly = GeneralizationEngine.monthlyTrend(filtered);
+  const chart = document.getElementById('bar-chart');
+  const labels = document.getElementById('bar-labels');
+  if (!monthly.length) { chart.innerHTML = '<span style="color:var(--subtle);font-size:.8rem">No data</span>'; return; }
+  const maxCount = Math.max(...monthly.map(m => m.count), 1);
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  // show last 12 buckets
+  const slice = monthly.slice(-12);
+  chart.innerHTML = slice.map(m => {
+    const h = Math.max(8, (m.count / maxCount) * 72);
+    return `<div class="bar" style="height:${h}px" title="${MONTHS[m.month]} ${m.year}: ${m.count} sightings, ${m.ray_count} rays"></div>`;
+  }).join('');
+  labels.innerHTML = slice.map(m => `<span class="bar-label">${MONTHS[m.month]}<br><span style="color:var(--subtle)">${String(m.year).slice(2)}</span></span>`).join('');
+}
+
+init();
+</script>
+</body>
+</html>
