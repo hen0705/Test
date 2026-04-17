@@ -358,6 +358,7 @@ leafMap.on('click', hideTooltip);
 
 // ── Load data ──
 async function loadMap() {
+  let data;
   try {
     const { data, error } = await supabase.from('sightings').select('*').eq('status', 'approved');
     if (error) {
@@ -382,6 +383,7 @@ async function loadMap() {
   } catch(err) {
     console.error('Map load error:', err);
     console.log(data)
+    console.error(err.stack);
   } finally {
     document.getElementById('map-loading').classList.add('hide');
   }
