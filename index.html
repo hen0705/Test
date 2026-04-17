@@ -285,19 +285,48 @@ footer{
 </footer>
 
 <script type="module">
-import { API, GeneralizationEngine } from './core.js';
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+import { GeneralizationEngine } from './core.js';
+
+const supabase = createClient(
+  "https://bintflfjmtrpdnxyccho.supabase.co",
+  "YOUR_ANON_KEY_HERE"
+);
 
 let allSightings = [];
 let selectedYear = 'all';
 
 async function init() {
   try {
-    allSightings = await API.getAll();
+    const res = await supabase
+      .from('sightings')
+      .select('*')
+      .eq('status', 'approved');
+
+    console.log('Index Supabase response:', res);
+
+    if (res.error) throw res.error;
+    if (!res.data) throw new Error('No data returned from Supabase');
+
+    allSightings = res.data.map(d => ({
+      ...d,
+      lat: parseFloat(d.lat),
+      lng: parseFloat(d.lng),
+      count: parseInt(d.count, 10) || 1,
+      submitted_at: d.submitted_at || new Date().toISOString(),
+      photo_urls: Array.isArray(d.photo_urls) ? d.photo_urls : [],
+      cell_lat: d.cell_lat ?? parseFloat(d.lat),
+      cell_lng: d.cell_lng ?? parseFloat(d.lng),
+      cell_size_deg: d.cell_size_deg ?? 0.15,
+    })).filter(d => d.submitted_at);
+
+    console.log('Index mapped sightings:', allSightings);
+
     populateYears();
     renderStats();
     renderTrendChart();
-  } catch(e) {
-    console.error(e);
+  } catch (e) {
+    console.error('Index init failed:', e);
   }
 }
 
