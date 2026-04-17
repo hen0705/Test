@@ -381,6 +381,7 @@ async function loadMap() {
     redraw();
   } catch(err) {
     console.error('Map load error:', err);
+    console.log(data)
   } finally {
     document.getElementById('map-loading').classList.add('hide');
   }
