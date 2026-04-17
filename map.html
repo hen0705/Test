@@ -369,10 +369,14 @@ leafMap.on('click', hideTooltip);
 // ── Load data ──
 async function loadMap() {
   try {
-    const res = await supabase
-      .from('sightings')
-      .select('*')
-      .eq('status', 'approved');
+    const bounds = leafMap.getBounds();
+
+const res = await supabase.rpc('get_sightings_in_bounds', {
+  min_lat: bounds.getSouth(),
+  max_lat: bounds.getNorth(),
+  min_lng: bounds.getWest(),
+  max_lng: bounds.getEast()
+});
 
     console.log('Supabase response:', res);
 
@@ -408,7 +412,41 @@ async function loadMap() {
     document.getElementById('map-loading').classList.add('hide');
   }
 }
+let moveTimeout;
 
+leafMap.on('moveend', () => {
+  clearTimeout(moveTimeout);
+
+  moveTimeout = setTimeout(async () => {
+    const bounds = leafMap.getBounds();
+
+    const res = await supabase.rpc('get_sightings_in_bounds', {
+      min_lat: bounds.getSouth(),
+      max_lat: bounds.getNorth(),
+      min_lng: bounds.getWest(),
+      max_lng: bounds.getEast()
+    });
+
+    if (res.error) {
+      console.error(res.error);
+      return;
+    }
+
+    allSightings = (res.data || []).map(d => ({
+      ...d,
+      lat: parseFloat(d.lat),
+      lng: parseFloat(d.lng),
+      count: parseInt(d.count, 10) || 1,
+      submitted_at: d.submitted_at || new Date().toISOString(),
+      photo_urls: d.photo_urls || null,
+      cell_lat: d.cell_lat ?? parseFloat(d.lat),
+      cell_lng: d.cell_lng ?? parseFloat(d.lng),
+      cell_size_deg: d.cell_size_deg ?? 0.15,
+    })).filter(d => Number.isFinite(d.lat) && Number.isFinite(d.lng));
+
+    redraw();
+  }, 150);
+});
 loadMap();
 </script>
 </body>
