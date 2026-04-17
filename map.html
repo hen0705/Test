@@ -360,7 +360,10 @@ leafMap.on('click', hideTooltip);
 async function loadMap() {
   try {
     const { data, error } = await supabase.from('sightings').select('*').eq('status', 'approved');
-    if (error) throw error;
+    if (error) {
+      console.log("Error")
+      throw error;
+    }
 
     allSightings = data.map(d => ({
       ...d,
