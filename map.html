@@ -273,6 +273,16 @@ window.redraw = function() {
   const getFishingWeight = (lat, lng) => Math.min(1, 0.2 + Math.max(0, 1 - Math.abs(lng + 75.9) * 3) * 0.8);
   const zones = GeneralizationEngine.process(filtered, getFishingWeight);
 
+  zones.forEach((z, i) => {
+  if (
+    !Number.isFinite(z.cell_lat) ||
+    !Number.isFinite(z.cell_lng) ||
+    !Number.isFinite(z.cell_size_deg)
+  ) {
+    console.error('Bad zone at index', i, z);
+  }
+});
+
   let visZones = zones;
   if (riskThresh === 'medium') visZones = zones.filter(z => z.risk_tier !== 'low');
   if (riskThresh === 'high')   visZones = zones.filter(z => z.risk_tier === 'high');
