@@ -86,10 +86,10 @@ export const GeneralizationEngine = {
 
     const season = this.getSeason(s.submitted_at);
     cells[key].season_counts[season] = (cells[key].season_counts[season] || 0) + 1;
-  });
-
-  return Object.values(cells).filter(c => c.count >= this.MIN_K);
-}
+    });
+  
+    return Object.values(cells).filter(c => c.count >= this.MIN_K);
+  },
 
   computeKDE(cells, bandwidth = this.KDE_BANDWIDTH, cellSize = this.CELL_SIZE) {
     const result = {};
