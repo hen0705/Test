@@ -67,18 +67,29 @@ export const GeneralizationEngine = {
   },
 
   aggregateCells(sightings, cellSize = this.CELL_SIZE) {
-    const cells = {};
-    sightings.forEach(s => {
-      const { cell_lat, cell_lng } = this.snapToGrid(s.lat, s.lng, cellSize);
-      const key = `${cell_lat},${cell_lng}`;
-      if (!cells[key]) cells[key] = { cell_lat, cell_lng, count: 0, ray_count: 0, season_counts: {} };
-      cells[key].count++;
-      cells[key].ray_count += s.count || 1;
-      const season = this.getSeason(s.submitted_at);
-      cells[key].season_counts[season] = (cells[key].season_counts[season] || 0) + 1;
-    });
-    return Object.values(cells).filter(c => c.count >= this.MIN_K);
-  },
+  const cells = {};
+  sightings.forEach(s => {
+    const snapped = this.snapToGrid(s.lat, s.lng, cellSize);
+    const key = `${snapped.cell_lat},${snapped.cell_lng}`;
+
+    if (!cells[key]) {
+      cells[key] = {
+        ...snapped,
+        count: 0,
+        ray_count: 0,
+        season_counts: {}
+      };
+    }
+
+    cells[key].count++;
+    cells[key].ray_count += s.count || 1;
+
+    const season = this.getSeason(s.submitted_at);
+    cells[key].season_counts[season] = (cells[key].season_counts[season] || 0) + 1;
+  });
+
+  return Object.values(cells).filter(c => c.count >= this.MIN_K);
+}
 
   computeKDE(cells, bandwidth = this.KDE_BANDWIDTH, cellSize = this.CELL_SIZE) {
     const result = {};
