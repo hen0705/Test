@@ -358,32 +358,42 @@ leafMap.on('click', hideTooltip);
 
 // ── Load data ──
 async function loadMap() {
-  let data, error;
   try {
-    { data, error } = await supabase.from('sightings').select('*').eq('status', 'approved');
-    if (error) {
-      console.log("Error")
-      throw error;
+    const res = await supabase
+      .from('sightings')
+      .select('*')
+      .eq('status', 'approved');
+
+    console.log('Supabase response:', res);
+
+    if (res.error) {
+      console.error('Supabase query error:', res.error);
+      throw res.error;
     }
 
-    allSightings = data.map(d => ({
+    if (!res.data) {
+      throw new Error('Supabase returned null data with no visible error');
+    }
+
+    allSightings = res.data.map(d => ({
       ...d,
       lat: parseFloat(d.lat),
       lng: parseFloat(d.lng),
-      count: parseInt(d.count) || 1,
+      count: parseInt(d.count, 10) || 1,
       submitted_at: d.submitted_at || new Date().toISOString(),
       photo_urls: d.photo_urls || null,
       cell_lat: d.cell_lat ?? parseFloat(d.lat),
       cell_lng: d.cell_lng ?? parseFloat(d.lng),
       cell_size_deg: d.cell_size_deg ?? 0.15,
-    })).filter(d => isFinite(d.lat) && isFinite(d.lng));
+    })).filter(d => Number.isFinite(d.lat) && Number.isFinite(d.lng));
+
+    console.log('Mapped sightings:', allSightings);
 
     populateYears();
     redraw();
-  } catch(err) {
+  } catch (err) {
     console.error('Map load error:', err);
-    console.log(data)
-    console.error(err.stack);
+    console.error('stack:', err?.stack);
   } finally {
     document.getElementById('map-loading').classList.add('hide');
   }
