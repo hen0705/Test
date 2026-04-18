@@ -366,20 +366,39 @@ function showSightingTooltip(e, s) {
 function hideTooltip() { tooltip.classList.remove('show'); }
 leafMap.on('click', hideTooltip);
 async function loadINat(bounds) {
-  // try bounded
-  let url = `https://api.inaturalist.org/v1/observations?taxon_name=Rhinoptera%20bonasus&nelat=${bounds.getNorth()}&nelng=${bounds.getEast()}&swlat=${bounds.getSouth()}&swlng=${bounds.getWest()}&per_page=200`;
+  let url = `https://api.inaturalist.org/v1/observations?taxon_id=49331&nelat=${bounds.getNorth()}&nelng=${bounds.getEast()}&swlat=${bounds.getSouth()}&swlng=${bounds.getWest()}&per_page=200`;
 
   let res = await fetch(url);
   let json = await res.json();
 
-  // fallback global if empty
+  // fallback if empty
   if (!json.results || json.results.length === 0) {
-    console.log("No bounded iNat data → loading global");
+    console.log("No bounded results → loading global");
 
-    res = await fetch(`https://api.inaturalist.org/v1/observations?taxon_name=Rhinoptera%20bonasus&per_page=200`);
+    res = await fetch(`https://api.inaturalist.org/v1/observations?taxon_id=49331&per_page=200`);
     json = await res.json();
   }
 
+  return (json.results || [])
+    .filter(obs =>
+      obs.geojson &&
+      obs.taxon &&
+      (
+        obs.taxon.id === 49331 ||
+        obs.taxon.ancestor_ids?.includes(49331)
+      )
+    )
+    .map(obs => ({
+      lat: obs.geojson.coordinates[1],
+      lng: obs.geojson.coordinates[0],
+      count: 1,
+      submitted_at: obs.observed_on
+        ? new Date(obs.observed_on).toISOString()
+        : new Date().toISOString(),
+      photo_urls: obs.photos?.length ? [obs.photos[0].url] : null,
+      source: 'inat'
+    }));
+}
   console.log("RAW iNat results:", json.results?.length);
 
   return (json.results || [])
