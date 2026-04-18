@@ -376,7 +376,6 @@ async function loadINat(bounds) {
 
   console.log("RAW iNat:", json.results?.length);
 
-  return (json.results || [])
     return (json.results || [])
   .filter(obs => {
     if (!obs.geojson) return false;
@@ -532,17 +531,7 @@ leafMap.on('moveend', () => {
       cell_size_deg: d.cell_size_deg ?? 0.15
     };
   })
-  .filter(d => d !== null);
-      ...d,
-      lat: parseFloat(d.lat),
-      lng: parseFloat(d.lng),
-      count: parseInt(d.count, 10) || 1,
-      submitted_at: d.submitted_at || new Date().toISOString(),
-      photo_urls: d.photo_urls || null,
-      cell_lat: d.cell_lat ?? parseFloat(d.lat),
-      cell_lng: d.cell_lng ?? parseFloat(d.lng),
-      cell_size_deg: d.cell_size_deg ?? 0.15,
-    }));
+    });
 
     redraw();
   }, 150);
