@@ -383,7 +383,14 @@ async function loadINat(bounds) {
   console.log("RAW iNat results:", json.results?.length);
 
   return (json.results || [])
-    .filter(obs => obs.geojson)
+    .filter(obs =>
+  obs.geojson &&
+  obs.taxon &&
+  (
+    obs.taxon.id === 49331 ||         // exact match
+    obs.taxon.ancestor_ids?.includes(49331) // descendants
+  )
+)
     .map(obs => ({
       lat: obs.geojson.coordinates[1],
       lng: obs.geojson.coordinates[0],
