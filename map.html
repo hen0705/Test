@@ -366,8 +366,7 @@ function showSightingTooltip(e, s) {
 function hideTooltip() { tooltip.classList.remove('show'); }
 leafMap.on('click', hideTooltip);
 async function loadINat(bounds) {
-  const url = `https://api.inaturalist.org/v1/observations?taxon_id=49331&nelat=${bounds.getNorth()}&nelng=${bounds.getEast()}&swlat=${bounds.getSouth()}&swlng=${bounds.getWest()}&quality_grade=research&per_page=200`;
-
+  const url = `https://api.inaturalist.org/v1/observations?taxon_id=49331&nelat=${bounds.getNorth()}&nelng=${bounds.getEast()}&swlat=${bounds.getSouth()}&swlng=${bounds.getWest()}&per_page=200`;
   const res = await fetch(url);
   const json = await res.json();
 
