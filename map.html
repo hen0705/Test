@@ -374,7 +374,28 @@ async function loadINat(bounds) {
   console.log("RAW iNat:", json.results?.length);
 
   return (json.results || [])
-    .filter(obs => obs.geojson)
+    return (json.results || [])
+  .filter(obs => {
+    if (!obs.geojson) return false;
+
+    // research-grade only
+    if (obs.quality_grade !== "research") return false;
+
+    // remove captive (aquarium/zoo)
+    if (obs.captive === true) return false;
+
+    // remove low accuracy
+    if (obs.positional_accuracy && obs.positional_accuracy > 5000) return false;
+
+    const lat = obs.geojson.coordinates[1];
+    const lng = obs.geojson.coordinates[0];
+
+    // 🌊 keep only coastal (Atlantic + Gulf)
+    const isCoastal =
+      (lng > -100 && lng < -65 && lat > 15 && lat < 50);
+
+    return isCoastal;
+  })
     .map(obs => {
       let lat, lng;
 
