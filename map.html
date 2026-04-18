@@ -376,8 +376,37 @@ async function loadINat(bounds) {
   return (json.results || [])
     .filter(obs => obs.geojson) // only require coordinates
     .map(obs => ({
-      lat: obs.geojson.coordinates[1],
-      lng: obs.geojson.coordinates[0],
+      let lat, lng;
+
+if (obs.location) {
+  const parts = obs.location.split(',');
+  lat = parseFloat(parts[0]);
+  lng = parseFloat(parts[1]);
+} else if (obs.geojson) {
+  lat = obs.geojson.coordinates[1];
+  lng = obs.geojson.coordinates[0];
+}
+
+// reject bad coordinates
+if (
+  !Number.isFinite(lat) ||
+  !Number.isFinite(lng) ||
+  lat < -90 || lat > 90 ||
+  lng < -180 || lng > 180
+) {
+  return null;
+}
+
+return {
+  lat,
+  lng,
+  count: 1,
+  submitted_at: obs.observed_on
+    ? new Date(obs.observed_on).toISOString()
+    : new Date().toISOString(),
+  photo_urls: obs.photos?.length ? [obs.photos[0].url] : null,
+  source: 'inat'
+};
       count: 1,
       submitted_at: obs.observed_on
         ? new Date(obs.observed_on).toISOString()
