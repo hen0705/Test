@@ -387,39 +387,6 @@ async function loadINat(bounds) {
     }));
 }
 
-  console.log("RAW iNat results:", json.results?.length);
-
-  return (json.results || [])
-    .filter(obs =>
-  obs.geojson &&
-  obs.taxon &&
-  (
-    obs.taxon.id === 49331 ||         // exact match
-    obs.taxon.ancestor_ids?.includes(49331) // descendants
-  )
-)
-    .map(obs => ({
-      lat: obs.geojson.coordinates[1],
-      lng: obs.geojson.coordinates[0],
-      count: 1,
-      submitted_at: obs.observed_on
-        ? new Date(obs.observed_on).toISOString()
-        : new Date().toISOString(),
-      photo_urls: obs.photos?.length ? [obs.photos[0].url] : null,
-      source: 'inat'
-      .filter(obs => {
-  if (!obs.geojson) return false;
-
-  const lat = obs.geojson.coordinates[1];
-  const lng = obs.geojson.coordinates[0];
-
-  return (
-    Math.abs(lat) <= 90 &&
-    Math.abs(lng) <= 180 &&
-    !(lat > 35 && lat < 45 && lng > -100 && lng < -80) // removes obvious Midwest cluster
-  );
-})
-    }));
 
 // ── Load data ──
 async function loadMap() {
