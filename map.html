@@ -387,51 +387,28 @@ async function loadINat(bounds) {
         lng = obs.geojson.coordinates[0];
       }
 
-     
+      if (
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lng) ||
+        lat < -90 || lat > 90 ||
+        lng < -180 || lng > 180
+      ) {
+        return null;
+      }
+
+      return {
+        lat,
+        lng,
+        count: 1,
+        submitted_at: obs.observed_on
+          ? new Date(obs.observed_on).toISOString()
+          : new Date().toISOString(),
+        photo_urls: obs.photos?.length ? [obs.photos[0].url] : null,
+        source: 'inat'
+      };
+    })
+    .filter(d => d !== null);
 }
-  if (
-    !Number.isFinite(lat) ||
-    !Number.isFinite(lng) ||
-    lat < -90 || lat > 90 ||
-    lng < -180 || lng > 180
-  ) {
-    return null;
-  }
-
-  return {
-    lat,
-    lng,
-    count: 1,
-    submitted_at: obs.observed_on
-      ? new Date(obs.observed_on).toISOString()
-      : new Date().toISOString(),
-    photo_urls: obs.photos?.length ? [obs.photos[0].url] : null,
-    source: 'inat'
-  };
-})
-.filter(d => d !== null);
-
-// reject bad coordinates
-if (
-  !Number.isFinite(lat) ||
-  !Number.isFinite(lng) ||
-  lat < -90 || lat > 90 ||
-  lng < -180 || lng > 180
-) {
-  return null;
-}
-
-return {
-  lat,
-  lng,
-  count: 1,
-  submitted_at: obs.observed_on
-    ? new Date(obs.observed_on).toISOString()
-    : new Date().toISOString(),
-  photo_urls: obs.photos?.length ? [obs.photos[0].url] : null,
-  source: 'inat'
-};
- 
 
 
 // ── Load data ──
