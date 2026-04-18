@@ -393,10 +393,7 @@ async function loadINat(bounds) {
     const lng = obs.geojson.coordinates[0];
 
     // 🌊 keep only coastal (Atlantic + Gulf)
-    const isCoastal =
-      (lng > -100 && lng < -65 && lat > 15 && lat < 50);
-
-    return isCoastal;
+  
   })
     .map(obs => {
       let lat, lng;
