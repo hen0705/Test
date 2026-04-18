@@ -458,58 +458,11 @@ console.log('iNat data:', inatData.length, inatData);
       ...inatData
     ];
 
-    allSightings = combined.map(d => ({
-  ...d,
-  lat: parseFloat(d.lat),
-  lng: parseFloat(d.lng),
-  count: parseInt(d.count, 10) || 1,
-  submitted_at: d.submitted_at || new Date().toISOString(),
-  photo_urls: d.photo_urls || null,
-  cell_lat: d.cell_lat ?? parseFloat(d.lat),
-  cell_lng: d.cell_lng ?? parseFloat(d.lng),
-  cell_size_deg: d.cell_size_deg ?? 0.15,
-})).filter(d => Number.isFinite(d.lat) && Number.isFinite(d.lng));
-    populateYears();
-    redraw();
-
-  } catch (err) {
-    console.error('Map load error:', err);
-  } finally {
-    document.getElementById('map-loading').classList.add('hide');
-  }
-}
-let moveTimeout;
-leafMap.on('moveend', () => {
-  clearTimeout(moveTimeout);
-
-  moveTimeout = setTimeout(async () => {
-    const bounds = leafMap.getBounds();
-
-    const dbRes = await supabase.rpc('get_sightings_in_bounds', {
-      min_lat: bounds.getSouth(),
-      max_lat: bounds.getNorth(),
-      min_lng: bounds.getWest(),
-      max_lng: bounds.getEast()
-    });
-
-    if (dbRes.error) {
-      console.error(dbRes.error);
-      return;
-    }
-
-    const inatData = await loadINat(bounds);
-
-    const combined = [
-      ...(dbRes.data || []),
-      ...inatData
-    ];
-
-    allSightings = combined
+   allSightings = combined
   .map(d => {
     const lat = parseFloat(d.lat);
     const lng = parseFloat(d.lng);
 
-    // 🚫 HARD FILTER — remove bad coordinates early
     if (
       !Number.isFinite(lat) ||
       !Number.isFinite(lng) ||
@@ -531,11 +484,28 @@ leafMap.on('moveend', () => {
       cell_size_deg: d.cell_size_deg ?? 0.15
     };
   })
-    });
+  .filter(d => d !== null);   // ✅ THIS WAS MISSING
 
-    redraw();
-  }, 150);
+        redraw();
+
+  } catch (err) {
+    console.error('Map load error:', err);
+  } finally {
+    document.getElementById('map-loading').classList.add('hide');
+  }
+}
+
 loadMap();
+
+let moveTimeout;
+
+leafMap.on('moveend', () => {
+  clearTimeout(moveTimeout);
+
+  moveTimeout = setTimeout(async () => {
+    await loadMap();
+  }, 150);
+});
 </script>
 </body>
 </html>
