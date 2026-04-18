@@ -407,8 +407,19 @@ async function loadINat(bounds) {
         : new Date().toISOString(),
       photo_urls: obs.photos?.length ? [obs.photos[0].url] : null,
       source: 'inat'
+      .filter(obs => {
+  if (!obs.geojson) return false;
+
+  const lat = obs.geojson.coordinates[1];
+  const lng = obs.geojson.coordinates[0];
+
+  return (
+    Math.abs(lat) <= 90 &&
+    Math.abs(lng) <= 180 &&
+    !(lat > 35 && lat < 45 && lng > -100 && lng < -80) // removes obvious Midwest cluster
+  );
+})
     }));
-}
 
 // ── Load data ──
 async function loadMap() {
