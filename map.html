@@ -271,8 +271,11 @@ window.redraw = function() {
 
   // ── Risk / hotspot zones ──
   const getFishingWeight = (lat, lng) => Math.min(1, 0.2 + Math.max(0, 1 - Math.abs(lng + 75.9) * 3) * 0.8);
-  const zones = GeneralizationEngine.process(filtered, getFishingWeight);
+  const safeFiltered = filtered.filter(d =>
+  Number.isFinite(d.lat) && Number.isFinite(d.lng)
+);
 
+const zones = GeneralizationEngine.process(safeFiltered, getFishingWeight);
   zones.forEach((z, i) => {
   if (
     !Number.isFinite(z.cell_lat) ||
