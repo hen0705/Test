@@ -400,7 +400,7 @@ async function loadMap() {
     }
 
     const inatData = await loadINat(bounds);
-
+console.log('iNat data:', inatData.length, inatData);
     const combined = [
       ...(dbRes.data || []),
       ...inatData
