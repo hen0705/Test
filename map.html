@@ -502,7 +502,34 @@ leafMap.on('moveend', () => {
       ...inatData
     ];
 
-    allSightings = combined.map(d => ({
+    allSightings = combined
+  .map(d => {
+    const lat = parseFloat(d.lat);
+    const lng = parseFloat(d.lng);
+
+    // 🚫 HARD FILTER — remove bad coordinates early
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 || lat > 90 ||
+      lng < -180 || lng > 180
+    ) {
+      return null;
+    }
+
+    return {
+      ...d,
+      lat,
+      lng,
+      count: parseInt(d.count, 10) || 1,
+      submitted_at: d.submitted_at || new Date().toISOString(),
+      photo_urls: d.photo_urls || null,
+      cell_lat: lat,
+      cell_lng: lng,
+      cell_size_deg: d.cell_size_deg ?? 0.15
+    };
+  })
+  .filter(d => d !== null);
       ...d,
       lat: parseFloat(d.lat),
       lng: parseFloat(d.lng),
