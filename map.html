@@ -429,14 +429,7 @@ return {
   photo_urls: obs.photos?.length ? [obs.photos[0].url] : null,
   source: 'inat'
 };
-      count: 1,
-      submitted_at: obs.observed_on
-        ? new Date(obs.observed_on).toISOString()
-        : new Date().toISOString(),
-      photo_urls: obs.photos?.length ? [obs.photos[0].url] : null,
-      source: 'inat'
-    }));
-}
+ 
 
 
 // ── Load data ──
