@@ -365,18 +365,65 @@ function showSightingTooltip(e, s) {
 }
 function hideTooltip() { tooltip.classList.remove('show'); }
 leafMap.on('click', hideTooltip);
+async function loadINat(bounds) {
+  const url = `https://api.inaturalist.org/v1/observations
+    ?taxon_id=49331
+    &nelat=${bounds.getNorth()}
+    &nelng=${bounds.getEast()}
+    &swlat=${bounds.getSouth()}
+    &swlng=${bounds.getWest()}
+    &quality_grade=research
+    &per_page=200`;
 
+  const res = await fetch(url);
+  const json = await res.json();
+
+  return (json.results || [])
+    .filter(obs => obs.geojson && obs.taxon?.id === 49331)
+    .map(obs => ({
+      lat: obs.geojson.coordinates[1],
+      lng: obs.geojson.coordinates[0],
+      count: 1,
+      submitted_at: obs.observed_on || new Date().toISOString(),
+      photo_urls: obs.photos?.length ? [obs.photos[0].url] : null,
+      source: 'inat'
+    }));
+}
 // ── Load data ──
 async function loadMap() {
   try {
     const bounds = leafMap.getBounds();
 
-const res = await supabase.rpc('get_sightings_in_bounds', {
+const bounds = leafMap.getBounds();
+
+// your database data
+const dbRes = await supabase.rpc('get_sightings_in_bounds', {
   min_lat: bounds.getSouth(),
   max_lat: bounds.getNorth(),
   min_lng: bounds.getWest(),
   max_lng: bounds.getEast()
 });
+
+// iNaturalist data
+const inatData = await loadINat(bounds);
+
+// combine them
+const combined = [
+  ...(dbRes.data || []),
+  ...inatData
+];
+
+allSightings = combined.map(d => ({
+  ...d,
+  lat: parseFloat(d.lat),
+  lng: parseFloat(d.lng),
+  count: parseInt(d.count, 10) || 1,
+  submitted_at: d.submitted_at || new Date().toISOString(),
+  photo_urls: d.photo_urls || null,
+  cell_lat: d.cell_lat ?? parseFloat(d.lat),
+  cell_lng: d.cell_lng ?? parseFloat(d.lng),
+  cell_size_deg: d.cell_size_deg ?? 0.15,
+})).filter(d => Number.isFinite(d.lat) && Number.isFinite(d.lng));
 
     console.log('Supabase response:', res);
 
