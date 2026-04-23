@@ -368,44 +368,33 @@ function showSightingTooltip(e, s) {
 }
 function hideTooltip() { tooltip.classList.remove('show'); }
 leafMap.on('click', hideTooltip);
-async function loadINat(bounds) {
-  const url = `https://api.inaturalist.org/v1/observations?taxon_id=49331&place_id=97394&quality_grade=research&per_page=200`;
+async function loadINat() {
+  let allResults = [];
+  let page = 1;
 
-  const res = await fetch(url);
-  const json = await res.json();
+  while (page <= 5) {
+    const url = `https://api.inaturalist.org/v1/observations?taxon_id=49331&quality_grade=research&per_page=200&page=${page}`;
 
-  console.log("RAW iNat:", json.results?.length);
+    const res = await fetch(url);
+    const json = await res.json();
 
-    return (json.results || [])
-  .filter(obs => {
-    if (!obs.geojson) return false;
+    if (!json.results || json.results.length === 0) break;
 
-    // research-grade only
-    if (obs.quality_grade !== "research") return false;
+    allResults = allResults.concat(json.results);
+    page++;
+  }
 
-    // remove captive (aquarium/zoo)
-    if (obs.captive === true) return false;
+  console.log("RAW iNat total:", allResults.length);
 
-    // remove low accuracy
-    if (obs.positional_accuracy && obs.positional_accuracy > 5000) return false;
+  return allResults
+    .filter(obs => {
+      if (!obs.geojson) return false;
+      if (obs.quality_grade !== "research") return false;
+      if (obs.captive === true) return false;
+      if (obs.positional_accuracy && obs.positional_accuracy > 5000) return false;
 
-    const lat = obs.geojson.coordinates[1];
-    const lng = obs.geojson.coordinates[0];
-
-    // 🌊 keep only coastal (Atlantic + Gulf)
-  
-  })
-    .map(obs => {
-      let lat, lng;
-
-      if (obs.location) {
-        const parts = obs.location.split(',');
-        lat = parseFloat(parts[0]);
-        lng = parseFloat(parts[1]);
-      } else {
-        lat = obs.geojson.coordinates[1];
-        lng = obs.geojson.coordinates[0];
-      }
+      const lat = obs.geojson.coordinates[1];
+      const lng = obs.geojson.coordinates[0];
 
       if (
         !Number.isFinite(lat) ||
@@ -413,8 +402,18 @@ async function loadINat(bounds) {
         lat < -90 || lat > 90 ||
         lng < -180 || lng > 180
       ) {
-        return null;
+        return false;
       }
+
+      // Keep only Atlantic + Gulf marine range, reject obvious inland US
+      const inAtlanticRange = lng > -82 && lng < -65 && lat > 24 && lat < 46;
+      const inGulfRange = lng > -98 && lng < -80 && lat > 18 && lat < 31;
+
+      return inAtlanticRange || inGulfRange;
+    })
+    .map(obs => {
+      const lat = obs.geojson.coordinates[1];
+      const lng = obs.geojson.coordinates[0];
 
       return {
         lat,
@@ -426,8 +425,7 @@ async function loadINat(bounds) {
         photo_urls: obs.photos?.length ? [obs.photos[0].url] : null,
         source: 'inat'
       };
-    })
-    .filter(d => d !== null);
+    });
 }
 
 
@@ -448,7 +446,7 @@ async function loadMap() {
       throw dbRes.error;
     }
 
-    const inatData = await loadINat(bounds);
+    const inatData = await loadINat();
 console.log('iNat data:', inatData.length, inatData);
     const combined = [
       ...(dbRes.data || []),
