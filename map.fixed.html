@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RayWatch — Migration Map</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+:root{
+  --ocean:#0a1628;--deep:#0d2040;--mid:#143258;--surf:#1a4a7a;
+  --foam:#e8f4f0;--ray:#4fb8a0;--ray2:#2d9a80;
+  --warn:#e8834a;--danger:#e05454;
+  --text:#e8f4f0;--muted:rgba(232,244,240,0.55);--subtle:rgba(232,244,240,0.3);
+  --border:rgba(79,184,160,0.18);--radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--ocean);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;}
+.app{display:grid;grid-template-rows:56px 1fr;height:100vh;}
+header{background:rgba(13,32,64,0.95);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 1.25rem;z-index:10;backdrop-filter:blur(8px);}
+.logo-sm{width:30px;height:30px;background:var(--ray);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-sm svg{width:17px;height:17px;}
+.site-name{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;}
+.header-sep{width:1px;height:20px;background:var(--border);margin:0 4px;}
+.header-tag{font-size:.78rem;color:var(--muted);}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.nav-btn{font-size:.8rem;padding:5px 14px;border-radius:100px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.nav-btn:hover{border-color:var(--ray);color:var(--ray);}
+.live-dot{width:7px;height:7px;background:#4fb8a0;border-radius:50%;animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+.map-container{position:relative;overflow:hidden;}
+#map{height:100%;z-index:1;}
+.controls{position:absolute;top:14px;left:14px;width:230px;z-index:5;background:rgba(13,32,64,0.92);border:1px solid var(--border);border-radius:var(--radius);backdrop-filter:blur(8px);overflow:hidden;}
+.ctrl-header{padding:10px 13px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ray);}
+.ctrl-body{padding:10px 13px;}
+.ctrl-label{font-size:.7rem;color:var(--muted);margin-bottom:5px;display:block;}
+.ctrl-label.mt{margin-top:10px;}
+.layer-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.layer-name{font-size:.82rem;}
+.toggle{width:34px;height:18px;background:rgba(79,184,160,0.2);border-radius:9px;position:relative;cursor:pointer;border:none;transition:background .2s;flex-shrink:0;}
+.toggle.on{background:var(--ray);}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:transform .2s;}
+.toggle.on::after{transform:translateX(16px);}
+select.map-select{width:100%;background:rgba(10,22,40,0.6);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.82rem;padding:6px 10px;outline:none;-webkit-appearance:none;appearance:none;}
+select.map-select option{background:var(--deep);}
+.year-strip{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:5;display:flex;gap:5px;background:rgba(13,32,64,0.92);border:1px solid var(--border);border-radius:100px;padding:5px 8px;backdrop-filter:blur(8px);white-space:nowrap;}
+.yr-btn{padding:3px 12px;border-radius:100px;font-size:.75rem;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .15s;}
+.yr-btn.active{background:var(--ray);color:var(--ocean);font-weight:500;}
+.yr-btn:hover:not(.active){color:var(--text);}
+.stats-bar{position:absolute;top:14px;right:14px;display:flex;flex-direction:column;gap:7px;z-index:5;}
+.stat-chip{background:rgba(13,32,64,0.92);border:1px solid var(--border);border-radius:var(--radius);padding:9px 13px;backdrop-filter:blur(8px);min-width:130px;}
+.stat-chip-label{font-size:.68rem;color:var(--subtle);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
+.stat-chip-val{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;color:var(--ray);}
+.legend{position:absolute;bottom:60px;left:14px;background:rgba(13,32,64,0.92);border:1px solid var(--border);border-radius:var(--radius);padding:10px 13px;backdrop-filter:blur(8px);z-index:5;}
+.legend-title{font-size:.68rem;color:var(--subtle);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;}
+.legend-row{display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:.78rem;color:var(--muted);}
+.legend-swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
+
+/* ── Tooltip ── */
+.tooltip{
+  position:absolute;z-index:20;
+  background:rgba(10,22,40,0.97);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:14px 16px;
+  backdrop-filter:blur(10px);
+  min-width:220px;max-width:280px;
+  pointer-events:none;
+  opacity:0;transition:opacity .15s;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+.tooltip.show{opacity:1;}
+.tt-title{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.tt-badge{padding:2px 8px;border-radius:100px;font-size:.68rem;font-weight:600;white-space:nowrap;}
+.tt-badge.high{background:rgba(224,84,84,0.2);color:#e05454;}
+.tt-badge.medium{background:rgba(232,131,74,0.2);color:var(--warn);}
+.tt-badge.low{background:rgba(79,184,160,0.2);color:var(--ray);}
+.tt-badge.inat{background:rgba(79,184,160,0.15);color:var(--ray);}
+.tt-divider{height:1px;background:var(--border);margin:8px 0;}
+.tt-row{display:flex;justify-content:space-between;align-items:flex-start;font-size:.79rem;color:var(--muted);margin-bottom:4px;gap:8px;}
+.tt-row span:last-child{color:var(--text);font-weight:500;text-align:right;}
+.tt-photos{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.tt-photo{width:76px;height:58px;object-fit:cover;border-radius:6px;border:1px solid var(--border);}
+.tt-notes{font-size:.72rem;color:var(--muted);margin-top:8px;border-top:1px solid var(--border);padding-top:7px;line-height:1.4;max-height:60px;overflow:hidden;}
+.tt-link{display:inline-block;margin-top:8px;font-size:.72rem;color:var(--ray);text-decoration:none;border-top:1px solid var(--border);padding-top:7px;width:100%;}
+.tt-link:hover{text-decoration:underline;}
+.tt-close-hint{font-size:.67rem;color:var(--subtle);margin-top:5px;text-align:center;}
+
+.fab{position:absolute;bottom:14px;right:14px;background:var(--ray);color:var(--ocean);border:none;border-radius:var(--radius);font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;padding:11px 18px;cursor:pointer;z-index:5;display:flex;align-items:center;gap:7px;box-shadow:0 4px 20px rgba(79,184,160,0.3);transition:background .15s,transform .1s;}
+.fab:hover{background:var(--ray2);}
+.fab:active{transform:scale(.98);}
+.zoom-ctrls{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5;}
+.zoom-btn{background:rgba(13,32,64,0.92);border:1px solid var(--border);border-radius:8px;color:var(--text);width:34px;height:34px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);transition:background .15s;}
+.zoom-btn:hover{background:rgba(26,74,122,0.6);}
+.map-loading{position:absolute;inset:0;z-index:15;background:var(--ocean);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-size:.9rem;color:var(--muted);transition:opacity .5s;}
+.map-loading.hide{opacity:0;pointer-events:none;}
+.spinner{width:28px;height:28px;border:2px solid rgba(79,184,160,0.2);border-top-color:var(--ray);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo-sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#0a1628" stroke-width="2.5" stroke-linecap="round">
+        <path d="M12 4C6 4 2 10 2 14c0 4 4 6 10 6s10-2 10-6c0-4-4-10-10-10Z"/>
+        <path d="M12 20l-4 3M12 20l4 3"/>
+      </svg>
+    </div>
+    <span class="site-name">RayWatch</span>
+    <span class="header-sep"></span>
+    <span class="header-tag">Cownose Ray Migration · Chesapeake / Mid-Atlantic</span>
+    <div class="header-right">
+      <div class="live-dot" title="Live data"></div>
+      <button class="nav-btn" onclick="location.href='index.html'">Home</button>
+      <button class="nav-btn" onclick="location.href='submit.html'">Report sighting</button>
+    </div>
+  </header>
+
+  <div class="map-container">
+    <div id="map"></div>
+    <div class="map-loading" id="map-loading">
+      <div class="spinner"></div>
+      <span>Loading migration data…</span>
+    </div>
+
+    <div class="controls">
+      <div class="ctrl-header">Map layers</div>
+      <div class="ctrl-body">
+        <div class="layer-row">
+          <span class="layer-name">Hotspot zones</span>
+          <button class="toggle on" id="tog-hotspot" onclick="toggleLayer('hotspot',this)"></button>
+        </div>
+        <div class="layer-row">
+          <span class="layer-name">Bycatch risk</span>
+          <button class="toggle on" id="tog-risk" onclick="toggleLayer('risk',this)"></button>
+        </div>
+        <div class="layer-row">
+          <!-- dots ON by default so clicks work -->
+          <span class="layer-name">Sighting dots</span>
+          <button class="toggle on" id="tog-dots" onclick="toggleLayer('dots',this)"></button>
+        </div>
+        <div class="layer-row">
+          <span class="layer-name">Photos only</span>
+          <button class="toggle" id="tog-photos" onclick="toggleLayer('photos',this)"></button>
+        </div>
+        <span class="ctrl-label mt">Season</span>
+        <select class="map-select" id="season-sel" onchange="redraw()">
+          <option value="all">All seasons</option>
+          <option value="Spring">Spring</option>
+          <option value="Summer">Summer</option>
+          <option value="Fall">Fall</option>
+          <option value="Winter">Winter</option>
+        </select>
+        <span class="ctrl-label mt">Risk threshold</span>
+        <select class="map-select" id="risk-sel" onchange="redraw()">
+          <option value="all">Show all</option>
+          <option value="medium">Medium + high</option>
+          <option value="high">High only</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="year-strip" id="year-strip">
+      <button class="yr-btn active" data-year="all" onclick="setYear('all',this)">All</button>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-chip"><div class="stat-chip-label">Approved sightings</div><div class="stat-chip-val" id="sc-sightings">—</div></div>
+      <div class="stat-chip"><div class="stat-chip-label">Active zones</div><div class="stat-chip-val" id="sc-zones">—</div></div>
+      <div class="stat-chip"><div class="stat-chip-label">High-risk cells</div><div class="stat-chip-val" id="sc-high">—</div></div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-title">Legend</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:rgba(224,84,84,0.7)"></div>High bycatch risk</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:rgba(232,131,74,0.6)"></div>Medium risk</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:rgba(79,184,160,0.5)"></div>Low risk / hotspot</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:rgba(79,184,160,0.9);border-radius:50%"></div>Sighting (click for info)</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:rgba(245,237,224,0.7);border-radius:50%"></div>Sighting with photo</div>
+    </div>
+
+    <div class="zoom-ctrls">
+      <button class="zoom-btn" onclick="leafMap.zoomIn()">+</button>
+      <button class="zoom-btn" onclick="leafMap.zoomOut()">−</button>
+      <button class="zoom-btn" onclick="leafMap.setView([36.8,-75.9],7)" title="Reset view">⌂</button>
+    </div>
+
+    <button class="fab" onclick="location.href='submit.html'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Report sighting
+    </button>
+
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+import { GeneralizationEngine } from './core.js';
+
+const supabase = createClient(
+  "https://bintflfjmtrpdnxyccho.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpbnRmbGZqbXRycGRueHljY2hvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjEwNDEsImV4cCI6MjA5MTI5NzA0MX0.Q9CCD1S8geIwsR6bLs7TH__urE7V1U9WZsj2Isv0sfk"
+);
+
+// ═══════════════════════════════════════
+// MAP INIT
+// ═══════════════════════════════════════
+const leafMap = L.map('map', { zoomControl: false }).setView([36.8, -75.9], 7);
+window.leafMap = leafMap;
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap &copy; CartoDB'
+}).addTo(leafMap);
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let allSightings = [];
+let inatCache    = null;
+let selectedYear = 'all';
+
+// dots ON by default so click-to-inspect works immediately
+const layers = { hotspot: true, risk: true, dots: true, photos: false };
+const leafLayers = {
+  hotspot: L.layerGroup().addTo(leafMap),
+  risk:    L.layerGroup().addTo(leafMap),
+  dots:    L.layerGroup().addTo(leafMap),   // <-- added to map
+  photos:  L.layerGroup()
+};
+
+// ═══════════════════════════════════════
+// UTIL
+// ═══════════════════════════════════════
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ═══════════════════════════════════════
+// WATER-ONLY FILTER — open-meteo elevation
+// Points > 2 m above sea level are land and dropped.
+// Batches 100 coords per request. Fails open.
+// ═══════════════════════════════════════
+async function filterToWaterOnly(points) {
+  const BATCH = 100;
+  const kept  = [];
+
+  for (let i = 0; i < points.length; i += BATCH) {
+    const batch = points.slice(i, i + BATCH);
+    const lats  = batch.map(p => p.lat.toFixed(6)).join(',');
+    const lngs  = batch.map(p => p.lng.toFixed(6)).join(',');
+
+    try {
+      const res = await fetch(
+        `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lngs}`
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { elevation } = await res.json();
+
+      batch.forEach((pt, idx) => {
+        const elev = elevation?.[idx];
+        if (elev == null || elev <= 2) {
+          kept.push(pt);
+        } else {
+          console.debug(`[land] dropped elev=${elev.toFixed(0)}m  ${pt.lat.toFixed(4)},${pt.lng.toFixed(4)}`);
+        }
+      });
+    } catch (err) {
+      console.warn('[land] elevation API error — keeping batch:', err.message);
+      kept.push(...batch);
+    }
+
+    if (i + BATCH < points.length) await sleep(250);
+  }
+
+  return kept;
+}
+
+// ═══════════════════════════════════════
+// iNATURALIST LOADER
+//
+// Key fixes vs. old version:
+//  1. Fetch 10 pages (2 000 records) instead of 5
+//  2. positional_accuracy threshold raised to 50 000 m
+//     — many valid boat/coastal sightings report low GPS
+//     precision. The elevation filter handles land points.
+//  3. Include both "research" AND "needs_id" grade
+//  4. Broader Atlantic range (lng -65 to -81 instead of -82)
+//  5. Store iNat observation URL for the tooltip link
+// ═══════════════════════════════════════
+async function loadINat() {
+  if (inatCache) return inatCache;
+
+  let raw = [];
+
+  for (let page = 1; page <= 10; page++) {
+    try {
+      // quality_grade=research,needs_id  picks up verified + community-reviewed
+      const url =
+        'https://api.inaturalist.org/v1/observations' +
+        '?taxon_id=82385' +
+        '&quality_grade=research%2Cneeds_id' +
+        '&per_page=200' +
+        `&page=${page}` +
+        '&order=desc&order_by=observed_on';
+
+      const res  = await fetch(url);
+      if (!res.ok) { console.warn(`iNat page ${page}: HTTP ${res.status}`); break; }
+
+      const json = await res.json();
+      if (!json.results?.length) break;
+
+      raw = raw.concat(json.results);
+      console.log(`[iNat] page ${page}: ${json.results.length} results (running total: ${raw.length})`);
+      await sleep(300);
+    } catch (err) {
+      console.error(`iNat page ${page} error:`, err);
+      break;
+    }
+  }
+
+  console.log(`[iNat] raw total: ${raw.length}`);
+
+  // ── Step 1: validity + geographic range ──────────────
+  // Atlantic: 24–46°N, 65–82°W  |  Gulf: 18–31°N, 80–98°W
+  // Raise positional_accuracy to 50 km — elevation filter handles land.
+  const candidates = raw
+    .filter(obs => {
+      const coords = obs.geojson?.coordinates;
+      if (!coords) return false;
+      const lng = coords[0], lat = coords[1];
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return false;
+      if (obs.captive === true) return false;
+      // Only reject if accuracy is explicitly set AND extremely bad (> 50 km)
+      if (obs.positional_accuracy && obs.positional_accuracy > 50000) return false;
+      const inAtlantic = lng >= -82 && lng <= -64 && lat >= 22 && lat <= 46;
+      const inGulf     = lng >= -98 && lng <= -79 && lat >= 17 && lat <= 32;
+      return inAtlantic || inGulf;
+    })
+    .map(obs => {
+      const lng = obs.geojson.coordinates[0];
+      const lat = obs.geojson.coordinates[1];
+
+      // Upgrade thumbnail → medium (440 px)
+      const rawPhoto = obs.photos?.[0]?.url ?? null;
+      const photoUrl = rawPhoto ? rawPhoto.replace('/square.', '/medium.') : null;
+
+      // All photo URLs for the gallery
+      const allPhotos = obs.photos?.length
+        ? obs.photos.slice(0, 4).map(p => p.url.replace('/square.', '/medium.'))
+        : null;
+
+      // observed_on is "YYYY-MM-DD" — anchor to noon UTC
+      let isoDate = null;
+      if (obs.observed_on) {
+        const d = new Date(obs.observed_on + 'T12:00:00Z');
+        if (!isNaN(d)) isoDate = d.toISOString();
+      }
+
+      return {
+        lat, lng,
+        count:          1,
+        behavior:       'observed',
+        submitter_type: obs.user?.login ?? 'iNaturalist',
+        submitted_at:   isoDate ?? new Date().toISOString(),
+        photo_urls:     allPhotos,
+        notes:          obs.description ?? null,
+        inat_id:        obs.id,
+        inat_url:       `https://www.inaturalist.org/observations/${obs.id}`,
+        place_guess:    obs.place_guess ?? null,
+        quality_grade:  obs.quality_grade,
+        source:         'inat'
+      };
+    });
+
+  console.log(`[iNat] after range/quality filter: ${candidates.length} — running elevation check…`);
+
+  // ── Step 2: drop land points ──────────────────────────
+  const waterOnly = await filterToWaterOnly(candidates);
+  console.log(`[iNat] after land filter: ${waterOnly.length}`);
+
+  inatCache = waterOnly;
+  return waterOnly;
+}
+
+// ═══════════════════════════════════════
+// LAYER TOGGLES
+// ═══════════════════════════════════════
+window.toggleLayer = function(name, btn) {
+  layers[name] = !layers[name];
+  btn.classList.toggle('on', layers[name]);
+  layers[name] ? leafLayers[name].addTo(leafMap) : leafMap.removeLayer(leafLayers[name]);
+};
+
+// ═══════════════════════════════════════
+// YEAR FILTER
+// ═══════════════════════════════════════
+window.setYear = function(year, btn) {
+  selectedYear = year === 'all' ? 'all' : +year;
+  document.querySelectorAll('.yr-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  redraw();
+};
+
+function populateYears() {
+  const strip = document.getElementById('year-strip');
+  strip.querySelectorAll('.yr-btn:not([data-year="all"])').forEach(b => b.remove());
+  const years = [...new Set(
+    allSightings.map(s => isoYear(s.submitted_at)).filter(Boolean)
+  )].sort().reverse();
+  years.forEach(y => {
+    const btn = document.createElement('button');
+    btn.className = 'yr-btn'; btn.dataset.year = y; btn.textContent = y;
+    btn.onclick = () => setYear(y, btn);
+    strip.appendChild(btn);
+  });
+}
+
+// ═══════════════════════════════════════
+// DATE HELPERS
+// ═══════════════════════════════════════
+function isoYear(str) {
+  if (!str) return null;
+  const d = new Date(str);
+  return isNaN(d) ? null : d.getFullYear();
+}
+function isoSeason(str) {
+  if (!str) return null;
+  const d = new Date(str);
+  if (isNaN(d)) return null;
+  const m = d.getMonth() + 1;
+  if (m >= 3 && m <= 5)  return 'Spring';
+  if (m >= 6 && m <= 8)  return 'Summer';
+  if (m >= 9 && m <= 11) return 'Fall';
+  return 'Winter';
+}
+
+// ═══════════════════════════════════════
+// FILTER
+// ═══════════════════════════════════════
+function getFiltered() {
+  const season = document.getElementById('season-sel').value;
+  let data = allSightings;
+  if (selectedYear !== 'all') data = data.filter(s => isoYear(s.submitted_at) === selectedYear);
+  if (season !== 'all')       data = data.filter(s => isoSeason(s.submitted_at) === season);
+  return data;
+}
+
+// ═══════════════════════════════════════
+// REDRAW
+// ═══════════════════════════════════════
+window.redraw = function() {
+  Object.values(leafLayers).forEach(lg => lg.clearLayers());
+  const filtered   = getFiltered();
+  const riskThresh = document.getElementById('risk-sel').value;
+
+  const getFishingWeight = (_lat, lng) =>
+    Math.min(1, 0.2 + Math.max(0, 1 - Math.abs(lng + 75.9) * 3) * 0.8);
+
+  const safe  = filtered.filter(d => Number.isFinite(d.lat) && Number.isFinite(d.lng));
+  const zones = GeneralizationEngine.process(safe, getFishingWeight);
+
+  let visZones = zones;
+  if (riskThresh === 'medium') visZones = zones.filter(z => z.risk_tier !== 'low');
+  if (riskThresh === 'high')   visZones = zones.filter(z => z.risk_tier === 'high');
+
+  const tierColor  = { high:'rgba(224,84,84,0.55)', medium:'rgba(232,131,74,0.45)', low:'rgba(79,184,160,0.35)' };
+  const tierBorder = { high:'#e05454', medium:'#e8834a', low:'#4fb8a0' };
+
+  visZones.forEach(z => {
+    if (!Number.isFinite(z.cell_lat) || !Number.isFinite(z.cell_lng) || !Number.isFinite(z.cell_size_deg)) return;
+    const cs = z.cell_size_deg;
+    const b  = [[z.cell_lat-cs/2, z.cell_lng-cs/2],[z.cell_lat+cs/2, z.cell_lng+cs/2]];
+
+    const hot = L.rectangle(b, { color:tierBorder[z.risk_tier], weight:0.5, fillColor:tierColor.low, fillOpacity:0.25 });
+    hot.on('mouseover', e => showZoneTooltip(e,z)).on('mouseout', hideTooltip);
+    leafLayers.hotspot.addLayer(hot);
+
+    const risk = L.rectangle(b, { color:tierBorder[z.risk_tier], weight:1, fillColor:tierColor[z.risk_tier], fillOpacity:0.45 });
+    risk.on('mouseover', e => showZoneTooltip(e,z)).on('mouseout', hideTooltip);
+    leafLayers.risk.addLayer(risk);
+  });
+
+  // Individual sighting dots — clickable
+  filtered.forEach(s => {
+    const hasPhoto = s.photo_urls?.length;
+    const isInat   = s.source === 'inat';
+    const color    = hasPhoto ? '#f5ede0' : (isInat ? '#4fb8a0' : '#7ecfc0');
+
+    const makeMarker = () => {
+      const marker = L.circleMarker([s.lat, s.lng], {
+        radius: 6, weight: 1.5, fillOpacity: 0.88,
+        color, fillColor: color
+      });
+      marker.on('click', e => {
+        L.DomEvent.stopPropagation(e);
+        showSightingTooltip(e, s, true);
+      });
+      return marker;
+    };
+
+    leafLayers.dots.addLayer(makeMarker());
+    if (hasPhoto) leafLayers.photos.addLayer(makeMarker());
+  });
+
+  document.getElementById('sc-sightings').textContent = filtered.length;
+  document.getElementById('sc-zones').textContent     = visZones.length;
+  document.getElementById('sc-high').textContent      = visZones.filter(z=>z.risk_tier==='high').length;
+};
+
+// ═══════════════════════════════════════
+// TOOLTIPS
+// ═══════════════════════════════════════
+const tooltip   = document.getElementById('tooltip');
+let   tooltipPinned = false;
+
+function positionTooltip(x, y) {
+  const tw = tooltip.offsetWidth  || 260;
+  const th = tooltip.offsetHeight || 200;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let left = x + 16;
+  let top  = y - 10;
+  if (left + tw > vw - 10) left = x - tw - 16;
+  if (top  + th > vh - 10) top  = vh - th - 10;
+  if (top < 10) top = 10;
+  tooltip.style.left = left + 'px';
+  tooltip.style.top  = top  + 'px';
+}
+
+function showZoneTooltip(e, zone) {
+  if (tooltipPinned) return;
+  tooltip.innerHTML = `
+    <div class="tt-title">Risk Zone <span class="tt-badge ${zone.risk_tier}">${zone.risk_tier}</span></div>
+    <div class="tt-divider"></div>
+    <div class="tt-row"><span>KDE intensity</span><span>${(zone.kde_intensity*100).toFixed(0)}%</span></div>
+    <div class="tt-row"><span>Fishing pressure</span><span>${(zone.fishing_weight*100).toFixed(0)}%</span></div>
+    <div class="tt-row"><span>Sightings in cell</span><span>${zone.count}</span></div>
+    <div class="tt-row"><span>Rays recorded</span><span>${zone.ray_count}</span></div>
+    <div class="tt-row"><span>Location</span><span>${zone.cell_lat.toFixed(3)}°N ${Math.abs(zone.cell_lng).toFixed(3)}°W</span></div>`;
+  tooltip.classList.add('show');
+  requestAnimationFrame(() => {
+    const pt = leafMap.latLngToContainerPoint(e.latlng);
+    positionTooltip(pt.x, pt.y);
+  });
+}
+
+function showSightingTooltip(e, s, pin = false) {
+  tooltipPinned = pin;
+
+  const photos = s.photo_urls?.length
+    ? `<div class="tt-photos">${s.photo_urls.slice(0,4).map(u=>`<img class="tt-photo" src="${u}" onerror="this.style.display='none'">`).join('')}</div>`
+    : '';
+
+  const dateLabel = s.submitted_at
+    ? new Date(s.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+    : 'Unknown date';
+
+  const season    = isoSeason(s.submitted_at) ?? '—';
+  const source    = s.source === 'inat'
+    ? `iNaturalist <span class="tt-badge inat">${s.quality_grade ?? 'research'}</span>`
+    : (s.submitter_type || 'RayWatch');
+
+  const placeRow  = s.place_guess
+    ? `<div class="tt-row"><span>Location</span><span>${s.place_guess}</span></div>`
+    : `<div class="tt-row"><span>Coords</span><span>${s.lat.toFixed(4)}°N ${Math.abs(s.lng).toFixed(4)}°W</span></div>`;
+
+  const linkRow   = s.inat_url
+    ? `<a class="tt-link" href="${s.inat_url}" target="_blank" rel="noopener">View on iNaturalist →</a>`
+    : '';
+
+  const notesRow  = s.notes
+    ? `<div class="tt-notes">${s.notes.slice(0, 160)}${s.notes.length > 160 ? '…' : ''}</div>`
+    : '';
+
+  tooltip.innerHTML = `
+    <div class="tt-title">
+      ${s.count||1} ray${(s.count||1)>1?'s':''}
+      ${s.behavior && s.behavior !== 'observed' ? `· ${s.behavior}` : ''}
+    </div>
+    <div class="tt-divider"></div>
+    <div class="tt-row"><span>Date</span><span>${dateLabel}</span></div>
+    <div class="tt-row"><span>Season</span><span>${season}</span></div>
+    <div class="tt-row"><span>Source</span><span>${source}</span></div>
+    ${placeRow}
+    ${s.depth_m      ? `<div class="tt-row"><span>Depth</span><span>${s.depth_m} m</span></div>` : ''}
+    ${s.water_temp_c ? `<div class="tt-row"><span>Water temp</span><span>${s.water_temp_c}°C</span></div>` : ''}
+    ${photos}
+    ${notesRow}
+    ${linkRow}
+    ${pin ? '<div class="tt-close-hint">Click map to close</div>' : ''}`;
+
+  tooltip.classList.add('show');
+
+  // Position after innerHTML set so offsetWidth is accurate
+  requestAnimationFrame(() => {
+    const pt = leafMap.latLngToContainerPoint(e.latlng);
+    positionTooltip(pt.x, pt.y);
+  });
+}
+
+function hideTooltip() {
+  if (tooltipPinned) return;
+  tooltip.classList.remove('show');
+}
+
+// Click on blank map closes pinned tooltip
+leafMap.on('click', () => {
+  tooltipPinned = false;
+  tooltip.classList.remove('show');
+});
+
+// ═══════════════════════════════════════
+// DATA LOAD
+// ═══════════════════════════════════════
+async function loadMap() {
+  try {
+    const bounds = leafMap.getBounds();
+    const dbRes  = await supabase.rpc('get_sightings_in_bounds', {
+      min_lat: bounds.getSouth(), max_lat: bounds.getNorth(),
+      min_lng: bounds.getWest(),  max_lng: bounds.getEast()
+    });
+    if (dbRes.error) console.error('[supabase]', dbRes.error);
+
+    const inatData = await loadINat();
+    console.log(`[load] DB: ${(dbRes.data||[]).length}  iNat: ${inatData.length}  total: ${(dbRes.data||[]).length + inatData.length}`);
+
+    allSightings = [...(dbRes.data || []), ...inatData]
+      .map(d => {
+        const lat = parseFloat(d.lat);
+        const lng = parseFloat(d.lng);
+        if (!Number.isFinite(lat)||!Number.isFinite(lng)||
+            lat<-90||lat>90||lng<-180||lng>180) return null;
+        return {
+          ...d, lat, lng,
+          count:        parseInt(d.count,10) || 1,
+          submitted_at: d.submitted_at || new Date().toISOString(),
+          photo_urls:   d.photo_urls   || null
+        };
+      })
+      .filter(Boolean);
+
+    populateYears();
+    redraw();
+  } catch (err) {
+    console.error('[loadMap]', err);
+  } finally {
+    document.getElementById('map-loading').classList.add('hide');
+  }
+}
+
+loadMap();
+
+let moveTimeout;
+leafMap.on('moveend', () => {
+  clearTimeout(moveTimeout);
+  moveTimeout = setTimeout(loadMap, 300);
+});
+</script>
+</body>
+</html>
